@@ -3,9 +3,9 @@
 #include "Utility.h"
 #include "Graphics.h"
 #include "DXDebug.h"
-//#include "imgui.h"
+#include "ImGui\imgui.h"
 
-//extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 const Window Window::m_sInstance;
 std::wstring Window::m_Title = L"?";
@@ -111,8 +111,8 @@ const bool Window::OnUpdate()
 
 LRESULT Window::HandleMessages(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept
 {
-	//if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-	//	return true;
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+		return true;
 
 	switch (msg)
 	{

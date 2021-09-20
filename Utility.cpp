@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Utility.h"
+#pragma warning(disable : 4996)
 std::string ConvertWstringToString(std::wstring const& wstr) noexcept
 {
 	std::size_t size = sizeof(wstr);

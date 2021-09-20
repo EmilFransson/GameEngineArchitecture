@@ -17,6 +17,7 @@ int CALLBACK WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 
 const bool InitializeConsole()
 {
+#pragma warning(disable : 4996)
 	if (AllocConsole() == FALSE)
 		return false;
 	if (freopen("CONIN$", "r", stdin) == nullptr)
