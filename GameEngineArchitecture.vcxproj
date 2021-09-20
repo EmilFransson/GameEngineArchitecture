@@ -129,6 +129,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="DXDebug.h" />
     <ClInclude Include="Graphics.h" />
+    <ClInclude Include="PoolAllocator.h" />
     <ClInclude Include="RenderCommand.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="ImGui\imconfig.h" />
