@@ -29,8 +29,8 @@ void Application::Run() noexcept
 		
 		AllocateCubes(1000);
 		AllocateCubes(10000);
-		AllocateCubes(100000);
-		//AllocateCubes(1000000); Performance LEL
+		//AllocateCubes(100000);
+		//AllocateCubes(1000000); //Performance LEL
 
 		UI::Begin();
 		// Windows not part of the dock space goes here:
