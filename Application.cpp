@@ -16,6 +16,8 @@ void Application::Run() noexcept
 {
 	while (m_Running)
 	{
+		PROFILE_FUNC;
+
 		static const FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		RenderCommand::ClearBackBuffer(color);
 		RenderCommand::ClearDepthBuffer();
@@ -39,6 +41,7 @@ void Application::Run() noexcept
 		UI::End();
 
 		RenderCommand::UnbindRenderTargets();
+
 		if (!Window::OnUpdate())
 			m_Running = false;
 	}

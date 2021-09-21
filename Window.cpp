@@ -4,6 +4,7 @@
 #include "Graphics.h"
 #include "DXDebug.h"
 #include "ImGui\imgui.h"
+#include "Profiler.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -105,6 +106,7 @@ const bool Window::OnUpdate()
 		TranslateMessage(&m_WindowMessage);
 		DispatchMessage(&m_WindowMessage);
 	}
+
 	HR_I(Graphics::GetSwapChain()->Present(0u, 0u));
 	return m_Running;
 }
