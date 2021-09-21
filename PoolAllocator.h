@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <memory>
 #include <cstddef>
-#define MAX_ENTITIES 100000
+#define MAX_ENTITIES 1000000
 template<typename T>
 struct PoolChunk
 {
