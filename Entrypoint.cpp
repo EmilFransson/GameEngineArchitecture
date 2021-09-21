@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Application.h"
-
 const bool InitializeConsole();
 
 int CALLBACK WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
@@ -10,6 +9,7 @@ int CALLBACK WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 		std::cout << "Error: Failed to initialize debug console";
 		return -1;
 	}
+
 	Application app;
 	app.Run();
 	return 0;

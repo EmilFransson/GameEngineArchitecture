@@ -18,6 +18,8 @@
 #include <iostream>
 #include <comdef.h>
 #include <vector>
+#include <chrono>
+#include <cstddef>
 
 #if defined(DEBUG) | defined (_DEBUG)
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
