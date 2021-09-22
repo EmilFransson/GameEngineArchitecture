@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="BuddyAllocator.hpp" />
     <ClInclude Include="DXDebug.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="PoolAllocator.h" />
