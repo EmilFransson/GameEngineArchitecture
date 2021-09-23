@@ -26,7 +26,10 @@ public:
     static void CreateAllocator(size_t);
     //Returns the instance of the singleton.
     static StackAllocator* GetInstance();
-
+    
+    //Get stack size and current stack size.
+    size_t GetStackMaxSize();
+    size_t GetStackCurrentSize();
     //Create a new object.
     template<typename T, typename... Arguments>
     T* New(Arguments&&... args);
@@ -67,6 +70,16 @@ void StackAllocator::CreateAllocator(size_t stackSize)
 StackAllocator* StackAllocator::GetInstance()
 {
     return pInstance;
+}
+
+size_t StackAllocator::GetStackMaxSize()
+{
+    return m_pMemoryStack->m_stackSize;
+}
+
+size_t StackAllocator::GetStackCurrentSize()
+{
+    return m_pMemoryStack->m_currentSize;
 }
 
 StackAllocator::StackAllocator(size_t stackSize)
