@@ -20,6 +20,8 @@
 #include <vector>
 #include <chrono>
 #include <cstddef>
+#include <array>
+#include <thread>
 
 #if defined(DEBUG) | defined (_DEBUG)
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
