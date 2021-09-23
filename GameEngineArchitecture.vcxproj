@@ -101,6 +101,7 @@
     </ClCompile>
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="RenderCommand.cpp" />
+    <ClCompile Include="Stack.cpp" />
     <ClCompile Include="UI.cpp" />
     <ClCompile Include="ImGui\imgui.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -142,6 +143,8 @@
     <ClInclude Include="PoolAllocator.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="RenderCommand.h" />
+    <ClInclude Include="Stack.h" />
+    <ClInclude Include="StackAllocator.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />

@@ -2,12 +2,15 @@
 #include "Application.h"
 #include "System.h"
 #include "RenderCommand.h"
+#include "StackAllocator.h"
 
 #define TOKENPASTE(x, y) x ## y
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
 #define PROFILE_FUNC Profiler TOKENPASTE2(profiler, __LINE__) (__FUNCTION__, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
 #define PROFILE_SCOPE(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
 
+#define MEGA 1000000
+#define GIGA 1000000000
 using namespace std::this_thread;     // sleep_for, sleep_until
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
@@ -30,6 +33,8 @@ Application::Application() noexcept
 
 void Application::Run() noexcept
 {
+	//Send in the size in bytes
+	StackAllocator::CreateAllocator(GIGA);
 	while (m_Running)
 	{
 		static const FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -152,6 +157,7 @@ void Application::DisplayProfilingResults() noexcept
 
 void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 {
+	//Poolallocator
 	std::string str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - PoolAllocator";
 	{
 		PROFILE_SCOPE(str);
@@ -168,6 +174,36 @@ void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 		{
 			Cube* cube = new Cube();
 			delete cube;
+		}
+	}
+
+
+
+
+
+	//Stackallocator.
+	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - StackAllocator";
+	{
+		PROFILE_SCOPE(str);
+		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
+		{
+			Cube* cube = StackAllocator::GetInstance()->New<Cube>();
+		}
+		StackAllocator::GetInstance()->CleanUp();
+	}
+	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - Normal stack";
+	{
+		PROFILE_SCOPE(str);
+		std::vector<Cube*> cubeVector;
+		cubeVector.reserve(nrOfCubes);
+		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
+		{
+			cubeVector.push_back(new Cube());
+		}
+		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
+		{
+			delete cubeVector[i];
+			cubeVector[i] = nullptr;
 		}
 	}
 }

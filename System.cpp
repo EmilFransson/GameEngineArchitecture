@@ -18,9 +18,8 @@ void System::Initialize() noexcept
 	InitializeAdapterOutputMetrics();
 
 	/*Verifying the integrity of the adapter/monitor combination.*/
-
-	assert(m_sPrimaryAdapter.m_DisplayModeList[m_sPrimaryAdapter.m_NrOfDisplaymodes - 1].Width == static_cast<UINT>(GetSystemMetrics(SM_CXSCREEN))
-		&& m_sPrimaryAdapter.m_DisplayModeList[m_sPrimaryAdapter.m_NrOfDisplaymodes - 1].Height == static_cast<UINT>(GetSystemMetrics(SM_CYSCREEN)));
+	//assert(m_sPrimaryAdapter.m_DisplayModeList[m_sPrimaryAdapter.m_NrOfDisplaymodes - 1].Width == static_cast<UINT>(GetSystemMetrics(SM_CXSCREEN))
+		//&& m_sPrimaryAdapter.m_DisplayModeList[m_sPrimaryAdapter.m_NrOfDisplaymodes - 1].Height == static_cast<UINT>(GetSystemMetrics(SM_CYSCREEN)));
 
 	m_sSystemMetrics.m_PrimaryMonitorWidth = GetSystemMetrics(SM_CXSCREEN);
 	m_sSystemMetrics.m_PrimaryMonitorHeight = GetSystemMetrics(SM_CYSCREEN);

@@ -5,5 +5,5 @@ public:
 	Cube() noexcept = default;
 	~Cube() noexcept = default;
 private:
-	std::byte m_Bytes[10000];
+	std::byte m_Bytes[100];
 };

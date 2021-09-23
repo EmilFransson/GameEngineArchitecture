@@ -28,14 +28,14 @@ private:
 	PoolChunk<T>* m_pMemoryPool;
 	PoolChunk<T>* m_pHead;
 	uint64_t m_MaxEntities;
-	uint64_t m_BytesCapacity = sizeof(T) * MAX_ENTITIES;
+	uint64_t m_BytesCapacity;
 	uint64_t m_UsedBytes = 0u;
 	uint64_t m_NrOfEntities = 0u;
 };
 
 template<class T>
 PoolAllocator<T>::PoolAllocator(const uint64_t entityCapacity)
-	: m_MaxEntities{ entityCapacity }
+	: m_MaxEntities{ entityCapacity }, m_BytesCapacity{ sizeof(T) * m_MaxEntities }
 {
 	m_pMemoryPool = new PoolChunk<T>[m_MaxEntities];
 	m_pHead = m_pMemoryPool;
