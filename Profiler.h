@@ -1,15 +1,33 @@
 #pragma once
+
+struct ProfileMetrics
+{
+	std::string Name;
+	float Duration;
+};
+
+template<class lambdaFunction>
 class Profiler
 {
 public:
-	Profiler(const char* functionName) noexcept;
-	~Profiler() noexcept;
-private:
-	const char* m_FunctionName;
-	std::chrono::time_point<std::chrono::steady_clock> m_StartPoint;
-};
+	Profiler(const std::string functionName, const lambdaFunction&& func) noexcept
+		: m_FunctionName{ std::move(functionName) }, m_LambdaFunction{std::move(func)}
+	{
+		m_StartPoint = std::chrono::high_resolution_clock::now();
+	}
 
-#define TOKENPASTE(x, y) x ## y
-#define TOKENPASTE2(x, y) TOKENPASTE(x, y)
-#define PROFILE_FUNC Profiler TOKENPASTE2(profiler, __LINE__) (__FUNCTION__)
-#define PROFILE_SCOPE(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName)
+	~Profiler() noexcept
+	{
+		std::chrono::time_point<std::chrono::steady_clock> endPoint = std::chrono::high_resolution_clock::now();
+
+		long long start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartPoint).time_since_epoch().count();
+		long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endPoint).time_since_epoch().count();
+
+		float durationInMilliseconds = (end - start) * 0.001f;
+		m_LambdaFunction({ m_FunctionName, durationInMilliseconds });
+	}
+private:
+	std::string m_FunctionName;
+	std::chrono::time_point<std::chrono::steady_clock> m_StartPoint;
+	const lambdaFunction m_LambdaFunction;
+};
