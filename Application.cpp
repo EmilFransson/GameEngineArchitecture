@@ -4,17 +4,18 @@
 #include "RenderCommand.h"
 #include "StackAllocator.h"
 
-#define TOKENPASTE(x, y) x ## y
-#define TOKENPASTE2(x, y) TOKENPASTE(x, y)
-#define PROFILE_FUNC Profiler TOKENPASTE2(profiler, __LINE__) (__FUNCTION__, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
-#define PROFILE_SCOPE(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
-
 #define MEGA 1000000
 #define GIGA 1000000000
 using namespace std::this_thread;     // sleep_for, sleep_until
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
-static uint32_t index = 0u;
+
+int Application::s_NrOfCubesToPoolAllocate = 0;
+static int nrOfCubesToNewAllocate = 0;
+static bool useNewAllocator = false;
+static bool allocateInChunks = false;
+bool Application::s_DeallocateEveryFrame = true;
+
 Application::Application() noexcept
 	: m_Running{true}
 {
@@ -28,6 +29,8 @@ Application::Application() noexcept
 	{
 		Cube* pCube = nullptr;
 		m_pCubesPool.push_back(pCube);
+		Cube* pCube2 = nullptr;
+		m_pCubesNew.push_back(pCube2);
 	}
 }
 
@@ -41,47 +44,25 @@ void Application::Run() noexcept
 		RenderCommand::ClearBackBuffer(color);
 		RenderCommand::ClearDepthBuffer();
 		RenderCommand::BindBackBuffer();
-	
 
 		UI::Begin();
 		// Windows not part of the dock space goes here:
 
-
 		//...And ends here.
 		UI::BeginDockSpace();
 		//Windows part of the dock space goes here:
+		RenderPoolAllocatorSettingsPanel<Cube>(m_CubeAllocator, m_pCubesPool);
+		RenderNewAllocatorSettingsPanel();
+		//RenderStackAllocatorSettingsPanel()
 
-		ImGui::Begin("Allocator settings");
-		static int nrOfCubesToAllocate = 0;
-		ImGui::InputInt("Nr of cubes to allocate", &nrOfCubesToAllocate, 1000);
-		static bool usePoolAllocator = false;
-		static bool useNewAllocator = false;
-		static bool allocateInChunks = false;
-		static bool deallocateEveryFrame = true;
-
-		ImGui::Checkbox("Pool Allocator", &usePoolAllocator);
-		ImGui::Checkbox("New Allocator", &useNewAllocator);
-		ImGui::Checkbox("Deallocate every frame", &deallocateEveryFrame);
-		
-		if (deallocateEveryFrame && index > 0u)
-		{
-			ResetAll();
-		}
-
-
-		ImGui::End();
 		{
 			//Scope could be used for profiling total time.
-			if (usePoolAllocator)
+			if (m_CubeAllocator.IsEnabled())
 			{
-				if (deallocateEveryFrame)
+				PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, s_NrOfCubesToPoolAllocate);
+				if (s_DeallocateEveryFrame)
 				{
-					PoolAllocateCubes(m_pCubesPool, nrOfCubesToAllocate);
-					PoolDeallocateCubes(m_pCubesPool, nrOfCubesToAllocate);
-				}
-				else
-				{
-					index = PoolAllocateCubes(m_pCubesPool, nrOfCubesToAllocate, index);
+					PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, s_NrOfCubesToPoolAllocate);
 				}
 			}
 		}
@@ -89,29 +70,12 @@ void Application::Run() noexcept
 			//Scope could be used for profiling total time.
 			if (useNewAllocator)
 			{
-				NewAllocateCubes(m_pCubesNew, nrOfCubesToAllocate);
-				NewDeallocateCubes(m_pCubesNew, nrOfCubesToAllocate);
+				NewAllocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
+				NewDeallocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
 			}
 		}
 
-		ImGui::Begin("Progress bar");
-		// Animate a simple progress bar
-		static float progress = 0.0f;
-		
-		progress = static_cast<float>(m_CubeAllocator.GetUsage() / static_cast<float>(m_CubeAllocator.GetCapacity()));
-		progress = 1.0f - progress;
-
-		ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f));
-		ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-		ImGui::Text("Progress Bar");
-
-		float progress_saturated = std::clamp(progress, 0.0f, 1.0f);
-		char buf[64];
-#pragma warning(disable:4996)
-		sprintf(buf, "%d/%d", (int)((m_CubeAllocator.GetEntityCapacity() - m_CubeAllocator.GetEntityUsage())), (int)(m_CubeAllocator.GetEntityCapacity()));
-		ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f), buf);
-		ImGui::End();
-
+		m_CubeAllocator.OnUIRender();
 
 		DisplayProfilingResults();
 		//...And ends here.
@@ -122,7 +86,11 @@ void Application::Run() noexcept
 		RenderCommand::UnbindRenderTargets();
 
 		if (!Window::OnUpdate())
+		{
+			//Clean up:
+			m_CubeAllocator.FreeAllMemory(m_pCubesPool);
 			m_Running = false;
+		}
 	}
 }
 
@@ -153,36 +121,10 @@ void Application::DisplayProfilingResults() noexcept
 	m_ProfileMetrics.clear();
 }
 
-
-
 void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 {
-	//Poolallocator
-	std::string str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - PoolAllocator";
-	{
-		PROFILE_SCOPE(str);
-		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
-		{
-			Cube* cube = m_CubeAllocator.New();
-			m_CubeAllocator.Delete(cube);
-		}
-	}
-	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - malloc";
-	{
-		PROFILE_SCOPE(str);
-		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
-		{
-			Cube* cube = new Cube();
-			delete cube;
-		}
-	}
-
-
-
-
-
-	//Stackallocator.
-	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - StackAllocator";
+	//Stack allocator.
+	std::string str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - StackAllocator";
 	{
 		PROFILE_SCOPE(str);
 		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
@@ -207,72 +149,13 @@ void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 		}
 	}
 }
-/*Function ONLY allocates, deallocation is done in another function
-  and requires the user to know what Cube* in the array has been allocated.
-  For testing purposes.*/
-void Application::PoolAllocateCubes(std::vector<Cube*>& pCubes, const uint32_t nrOfCubesToAlloc) noexcept
+
+void Application::RenderNewAllocatorSettingsPanel() noexcept
 {
-	std::string str = __FUNCTION__ " (" + std::to_string(nrOfCubesToAlloc) + ")";
-	PROFILE_SCOPE(str);
-
-	for (uint32_t i{ 0u }; i < nrOfCubesToAlloc; ++i)
-	{
-		pCubes[i] = m_CubeAllocator.New();
-	}
-}
-
-uint32_t Application::PoolAllocateCubes(std::vector<Cube*>& pCubes, const uint32_t nrOfCubesToAlloc, const uint32_t startIndex) noexcept
-{
-	std::string str = __FUNCTION__ " (" + std::to_string(nrOfCubesToAlloc) + ")";
-	uint32_t i{ startIndex };
-	uint32_t stop = i + nrOfCubesToAlloc;
-	stop = stop <= m_CubeAllocator.GetEntityCapacity() ? stop : m_CubeAllocator.GetEntityCapacity();
-	{
-		PROFILE_SCOPE(str);
-		for (i; i < stop; ++i)
-		{
-			pCubes[i] = m_CubeAllocator.New();
-		}
-	}
-
-	return i;
-}
-
-void Application::PoolDeallocateCubes(std::vector<Cube*>& pCubes, const uint32_t nrOfCubesToDealloc) noexcept
-{
-	std::string str = __FUNCTION__ " (" + std::to_string(nrOfCubesToDealloc) + ")";
-	PROFILE_SCOPE(str);
-	for (uint32_t i{ 0u }; i < nrOfCubesToDealloc; ++i)
-	{
-		m_CubeAllocator.Delete(pCubes[i]);
-	}
-}
-
-void Application::NewAllocateCubes(std::vector<Cube*>& pCubes, const uint32_t nrOfCubesToAlloc) noexcept
-{
-	std::string str = __FUNCTION__ " (" + std::to_string(nrOfCubesToAlloc) + ")";
-	PROFILE_SCOPE(str);
-	for (uint32_t i{ 0u }; i < nrOfCubesToAlloc; ++i)
-	{
-		pCubes[i] = new Cube;
-	}
-}
-
-void Application::NewDeallocateCubes(std::vector<Cube*>& pCubes, const uint32_t nrOfCubesToDealloc) noexcept
-{
-	std::string str = __FUNCTION__ " (" + std::to_string(nrOfCubesToDealloc) + ")";
-	PROFILE_SCOPE(str);
-	for (uint32_t i{ 0u }; i < nrOfCubesToDealloc; ++i)
-	{
-		delete pCubes[i];
-	}
-}
-
-void Application::ResetAll() noexcept
-{
-	for (uint32_t i{ 0u }; i < index; ++i)
-	{
-		m_CubeAllocator.Delete(m_pCubesPool[i]);
-	}
-	index = 0;
+	ImGui::Begin("New-Allocator settings");
+	ImGui::InputInt("#Cubes to allocate", &nrOfCubesToNewAllocate, 1000);
+	if (nrOfCubesToNewAllocate < 0)
+		nrOfCubesToNewAllocate = 0;
+	ImGui::Checkbox("Enable New Allocator", &useNewAllocator);
+	ImGui::End();
 }

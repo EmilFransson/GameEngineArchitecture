@@ -58,7 +58,7 @@ void StackAllocator::CreateAllocator(size_t stackSize)
     //Only create it if it does not exist.
     if (!pInstance)
     {
-        pInstance = new StackAllocator(stackSize);
+        pInstance = DBG_NEW StackAllocator(stackSize);
     }
     else
     {
@@ -85,7 +85,7 @@ size_t StackAllocator::GetStackCurrentSize()
 StackAllocator::StackAllocator(size_t stackSize)
 {
     //Allocate the "header" of the stack.
-    m_pMemoryStack = new Stack(stackSize);
+    m_pMemoryStack = DBG_NEW Stack(stackSize);
 
     //Set the bytewalker to be the start of the allocated memory.
     m_pByteWalker = m_pMemoryStack->m_pData;

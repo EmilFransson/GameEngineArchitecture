@@ -5,7 +5,7 @@
 Stack::Stack(unsigned long long stackSize)
 {
 	//Allocate the stack itself.
-	m_pData = new std::byte[stackSize];
+	m_pData = DBG_NEW std::byte[stackSize];
 	m_stackSize = stackSize;
 	m_currentSize = 0;
 }
