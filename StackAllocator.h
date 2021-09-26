@@ -26,7 +26,10 @@ public:
     static void CreateAllocator(size_t);
     //Returns the instance of the singleton.
     static StackAllocator* GetInstance();
-
+    
+    //Get stack size and current stack size.
+    size_t GetStackMaxSize();
+    size_t GetStackCurrentSize();
     //Create a new object.
     template<typename T, typename... Arguments>
     T* New(Arguments&&... args);
@@ -55,7 +58,7 @@ void StackAllocator::CreateAllocator(size_t stackSize)
     //Only create it if it does not exist.
     if (!pInstance)
     {
-        pInstance = new StackAllocator(stackSize);
+        pInstance = DBG_NEW StackAllocator(stackSize);
     }
     else
     {
@@ -69,10 +72,20 @@ StackAllocator* StackAllocator::GetInstance()
     return pInstance;
 }
 
+size_t StackAllocator::GetStackMaxSize()
+{
+    return m_pMemoryStack->m_stackSize;
+}
+
+size_t StackAllocator::GetStackCurrentSize()
+{
+    return m_pMemoryStack->m_currentSize;
+}
+
 StackAllocator::StackAllocator(size_t stackSize)
 {
     //Allocate the "header" of the stack.
-    m_pMemoryStack = new Stack(stackSize);
+    m_pMemoryStack = DBG_NEW Stack(stackSize);
 
     //Set the bytewalker to be the start of the allocated memory.
     m_pByteWalker = m_pMemoryStack->m_pData;

@@ -63,9 +63,9 @@ void System::InitializeAdapterOutputMetrics() noexcept
 			HR(adapter.m_pAdapter->EnumOutputs(0u, &adapter.m_pAdapterOutput));
 			//[https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgioutput-getdisplaymodelist]
 			HR(adapter.m_pAdapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM,		//Color format of monitor.
-				DXGI_ENUM_MODES_INTERLACED,	//Flags for enumerating display modes.
-				&adapter.m_NrOfDisplaymodes,	//Number of display modes available for this monitor/adapter combination. 
-				nullptr));					//The display mode structure(s) to be filled.
+															DXGI_ENUM_MODES_INTERLACED,		//Flags for enumerating display modes.
+															&adapter.m_NrOfDisplaymodes,	//Number of display modes available for this monitor/adapter combination. 
+															nullptr));						//The display mode structure(s) to be filled.
 
 /*Create a list to hold all the possible display modes for this monitor/video card combination.*/
 			adapter.m_DisplayModeList = std::shared_ptr<DXGI_MODE_DESC[]>(DBG_NEW DXGI_MODE_DESC[adapter.m_NrOfDisplaymodes]);
