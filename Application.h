@@ -3,6 +3,7 @@
 #include "UI.h"
 #include "Profiler.h"
 #include "PoolAllocator.h"
+#include "BuddyAllocator.hpp"
 #include "Cube.h"
 
 class Application
@@ -19,4 +20,5 @@ private:
 	bool m_Running;
 	std::unique_ptr<UI> m_pImGui;
 	PoolAllocator<Cube> m_CubeAllocator;
+	BuddyAllocator m_buddyAllocator;
 };

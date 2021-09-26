@@ -119,4 +119,14 @@ void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 		}
 	}
 
+	// BuddyAllocator
+	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - Buddy Allocator";
+	Cube** cubes = new Cube * [10000];
+	{
+		PROFILE_SCOPE(str);
+		constexpr auto lol = sizeof(Cube);
+		cubes[0] = (Cube*) m_buddyAllocator.alloc(sizeof(Cube) * nrOfCubes);
+		m_buddyAllocator.free(cubes[0], sizeof(Cube) * nrOfCubes);
+	}
+	delete[] cubes;
 }
