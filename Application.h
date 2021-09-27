@@ -34,6 +34,9 @@ private:
 	void RenderNewAllocatorSettingsPanel() noexcept;
 	template<typename T>
 	void RenderPoolAllocatorProgressBar(PoolAllocator<T>& poolAllocator) noexcept;
+
+	void StackAllocateObjects() noexcept;
+	void RenderStackAllocatorProgressBar() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
 	bool m_Running;

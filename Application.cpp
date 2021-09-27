@@ -36,7 +36,7 @@ Application::Application() noexcept
 void Application::Run() noexcept
 {
 	//Send in the size in bytes
-	StackAllocator::CreateAllocator(GIGA);
+	StackAllocator::CreateAllocator(GIGA / 5);
 	while (m_Running)
 	{
 		static const FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -52,7 +52,6 @@ void Application::Run() noexcept
 		//Windows part of the dock space goes here:
 		RenderPoolAllocatorSettingsPanel<Cube>(m_CubeAllocator, m_pCubesPool);
 		RenderNewAllocatorSettingsPanel();
-		//RenderStackAllocatorSettingsPanel()
 
 		{
 			//Scope could be used for profiling total time.
@@ -83,6 +82,9 @@ void Application::Run() noexcept
 				NewDeallocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
 			}
 		}
+		{
+			StackAllocateObjects();
+		}
 
 		DisplayProfilingResults();
 		//...And ends here.
@@ -94,8 +96,9 @@ void Application::Run() noexcept
 
 		if (!Window::OnUpdate())
 		{
-			//Clean up:
+			//Free up memory:
 			m_CubeAllocator.FreeAllMemory(m_pCubesPool);
+			StackAllocator::GetInstance()->FreeAllMemory();
 			m_Running = false;
 		}
 	}
@@ -105,40 +108,24 @@ void Application::DisplayProfilingResults() noexcept
 {
 	ImGui::Begin("Profiling metrics");
 	static bool isGreen = false;
-	if (m_ProfileMetrics.size() != 1)
+	for (auto& metric : m_ProfileMetrics)
 	{
-		for (auto& metric : m_ProfileMetrics)
+		if (isGreen)
 		{
-			if (isGreen)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-				isGreen = false;
-			}
-			else
-			{
-				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-				isGreen = true;
-			}
-			ImGui::Text(std::to_string(metric.Duration).c_str());
-			ImGui::SameLine();
-			ImGui::Text("ms.");
-			ImGui::SameLine();
-			ImGui::Text(metric.Name.c_str());
-			ImGui::PopStyleColor();
+			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+			isGreen = false;
 		}
-	}
-	else
-	{
-		for (auto& metric : m_ProfileMetrics)
+		else
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-			ImGui::Text(std::to_string(metric.Duration).c_str());
-			ImGui::SameLine();
-			ImGui::Text("ms.");
-			ImGui::SameLine();
-			ImGui::Text(metric.Name.c_str());
-			ImGui::PopStyleColor();
+			isGreen = true;
 		}
+		ImGui::Text(std::to_string(metric.Duration).c_str());
+		ImGui::SameLine();
+		ImGui::Text("ms.");
+		ImGui::SameLine();
+		ImGui::Text(metric.Name.c_str());
+		ImGui::PopStyleColor();
 	}
 	ImGui::End();
 	m_ProfileMetrics.clear();
@@ -185,5 +172,59 @@ void Application::RenderNewAllocatorSettingsPanel() noexcept
 			nrOfCubesToNewAllocate = 0;
 		}
 	}
+	ImGui::End();
+}
+
+void Application::StackAllocateObjects() noexcept
+{
+	static int nrOfCubesToStackAllocate = 0;
+	ImGui::Begin("StackAllocator Settings");
+	static bool pressed = false;
+	if (ImGui::Checkbox("Enable", &pressed))
+	{
+		StackAllocator::GetInstance()->ToggleEnabled();
+		if (!StackAllocator::GetInstance()->IsEnabled())
+		{
+			StackAllocator::GetInstance()->CleanUp();
+		}
+	}
+
+	if (ImGui::InputInt("#Cubes to allocate.", &nrOfCubesToStackAllocate, 1000))
+	{
+		if (nrOfCubesToStackAllocate < 0)
+			nrOfCubesToStackAllocate = 0;
+	}
+	ImGui::End();
+
+	if (StackAllocator::GetInstance()->IsEnabled())
+	{
+		std::string str = __FUNCTION__;
+		str.append("'Cube allocation'");
+		str.append(" (");
+		str.append(std::to_string(nrOfCubesToStackAllocate).c_str());
+		str.append(")");
+		PROFILE_SCOPE(str);
+		for (uint64_t i{ 0u }; i < nrOfCubesToStackAllocate; i++)
+		{
+			Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
+
+		}
+		//Render progressbar before cleanup to visualize usage.
+		RenderStackAllocatorProgressBar();
+		StackAllocator::GetInstance()->CleanUp();
+	}
+}
+
+void Application::RenderStackAllocatorProgressBar() noexcept
+{
+	ImGui::Begin("Stack Allocator memory usage");
+	static float progress = 0.0f;
+
+	progress = static_cast<float>(StackAllocator::GetInstance()->GetStackCurrentSize() / static_cast<float>(StackAllocator::GetInstance()->GetStackMaxSize()));
+	progress = 1.0f - progress;
+
+	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::Text("Bytes free.");
 	ImGui::End();
 }

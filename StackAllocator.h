@@ -1,6 +1,6 @@
 #pragma once
+#include "pch.h"
 #include "Stack.h"
-//Pch??
 #include <stdint.h>
 #include <memory>
 #include <cstddef>
@@ -14,7 +14,7 @@ class StackAllocator
 protected:
     //Constructor is called only by CreateAllocator.
     StackAllocator(size_t);
-    //Called when we delete the allocator at the end of the program.
+    //Called when we delete the allocator in the FreeMemory-function.
     ~StackAllocator();
 
 public:
@@ -24,6 +24,7 @@ public:
 
     //Used to create the allocator if it does not exist.
     static void CreateAllocator(size_t);
+    static void FreeAllMemory();
     //Returns the instance of the singleton.
     static StackAllocator* GetInstance();
     
@@ -37,19 +38,25 @@ public:
     //Called at the end of our scope each frame to clear the stack.
     void CleanUp();
 
+    void ToggleEnabled() noexcept;
+    const bool IsEnabled() const noexcept;
 private:
+    bool m_Enabled;
     //Singleton instance.
     static StackAllocator* pInstance;
 
     //Our stack header.
-    Stack* m_pMemoryStack;
+    static Stack* m_pMemoryStack;
     //Walks across our stack to assign addresses to created objects and their headers.
-    std::byte* m_pByteWalker;
+    static std::byte* m_pByteWalker;
     //Pointer to top object in the stack.
-    ObjectHeader* m_pTop;
+    static ObjectHeader* m_pTop;
 };
 
 StackAllocator* StackAllocator::pInstance{ nullptr };
+Stack* StackAllocator::m_pMemoryStack{ nullptr };
+std::byte* StackAllocator::m_pByteWalker{ nullptr };
+ObjectHeader* StackAllocator::m_pTop{ nullptr };
 
 //---------------------------------------------------------------------
 
@@ -65,6 +72,22 @@ void StackAllocator::CreateAllocator(size_t stackSize)
         std::cerr << "Error! You are trying to create another Stack Allocator!" << std::endl;
         assert(false);
     }
+}
+
+void StackAllocator::ToggleEnabled() noexcept
+{
+    m_Enabled = !m_Enabled;
+}
+
+const bool StackAllocator::IsEnabled() const noexcept
+{
+    return m_Enabled;
+}
+
+void StackAllocator::FreeAllMemory()
+{
+    delete pInstance;
+    pInstance = nullptr;
 }
 
 StackAllocator* StackAllocator::GetInstance()
@@ -91,11 +114,13 @@ StackAllocator::StackAllocator(size_t stackSize)
     m_pByteWalker = m_pMemoryStack->m_pData;
 
     m_pTop = nullptr;
+
+    m_Enabled = false;
 }
 
 StackAllocator::~StackAllocator()
 {
-    delete[] m_pMemoryStack;
+    delete m_pMemoryStack;
     m_pMemoryStack = nullptr;
     m_pByteWalker = nullptr;
     m_pTop = nullptr;
@@ -105,12 +130,10 @@ template<typename T, typename... Arguments>
 T* StackAllocator::New(Arguments&&... args)
 {
     //Check if we have enough space on the stack for the object.
+    //If not, return nullptr and nothing happens.
     if (m_pMemoryStack->m_stackSize < m_pMemoryStack->m_currentSize + sizeof(T) + sizeof(ObjectHeader))
     {
-        std::cout << sizeof(T) << std::endl;
-        std::cout << sizeof(ObjectHeader) << std::endl;
-        std::cerr << "Error! Not enough memory left on the stack!" << std::endl;
-        assert(false);
+        return nullptr;
     }
 
     //Get an address for the new object and then move the walker by the size of the object.
