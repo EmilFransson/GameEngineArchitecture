@@ -100,57 +100,16 @@ void Application::Run() noexcept
 void Application::DisplayProfilingResults() noexcept
 {
 	ImGui::Begin("Profiling metrics");
-	static bool isGreen = false;
 	for (auto& metric : m_ProfileMetrics)
 	{
-		if (isGreen)
-		{
-			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-			isGreen = false;
-		}
-		else
-		{
-			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-			isGreen = true;
-		}
 		ImGui::Text(std::to_string(metric.Duration).c_str());
 		ImGui::SameLine();
 		ImGui::Text("ms.");
 		ImGui::SameLine();
 		ImGui::Text(metric.Name.c_str());
-		ImGui::PopStyleColor();
 	}
 	ImGui::End();
 	m_ProfileMetrics.clear();
-}
-
-void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
-{
-	//Stack allocator.
-	std::string str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - StackAllocator";
-	{
-		PROFILE_SCOPE(str);
-		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
-		{
-			Cube* cube = StackAllocator::GetInstance()->New<Cube>();
-		}
-		StackAllocator::GetInstance()->CleanUp();
-	}
-	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - Normal stack";
-	{
-		PROFILE_SCOPE(str);
-		std::vector<Cube*> cubeVector;
-		cubeVector.reserve(nrOfCubes);
-		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
-		{
-			cubeVector.push_back(new Cube());
-		}
-		for (uint32_t i{ 0u }; i < nrOfCubes; i++)
-		{
-			delete cubeVector[i];
-			cubeVector[i] = nullptr;
-		}
-	}
 }
 
 void Application::RenderNewAllocatorSettingsPanel() noexcept
@@ -187,12 +146,35 @@ void Application::StackAllocateObjects() noexcept
 		if (nrOfCubesToStackAllocate < 0)
 			nrOfCubesToStackAllocate = 0;
 	}
+
+	//A lot of small objects.
+	if (ImGui::Button("Test Case 1 - Many small objects"))
+	{
+		for (size_t i = 0; i < 1000; i++)
+		{
+
+		}
+	}
+	if (ImGui::Button("Test Case 2 - Few large objects"))
+	{
+		for (size_t i = 0; i < 1000; i++)
+		{
+
+		}
+	}
+	if (ImGui::Button("Test Case 3 - Random objects in a random order"))
+	{
+		for (size_t i = 0; i < 1000; i++)
+		{
+
+		}
+	}
 	ImGui::End();
 
 	if (StackAllocator::GetInstance()->IsEnabled())
 	{
 		std::string str = __FUNCTION__;
-		str.append("'Cube allocation'");
+		str.append(" 'Cube allocation & deallocation'");
 		str.append(" (");
 		str.append(std::to_string(nrOfCubesToStackAllocate).c_str());
 		str.append(")");
