@@ -13,7 +13,7 @@ using std::chrono::system_clock;
 int Application::s_NrOfCubesToPoolAllocate = 0;
 static int nrOfCubesToNewAllocate = 0;
 static bool useNewAllocator = false;
-static bool allocateInChunks = false;
+static bool performTest = false;
 
 Application::Application() noexcept
 	: m_Running{true}
@@ -58,13 +58,20 @@ void Application::Run() noexcept
 			//Scope could be used for profiling total time.
 			if (m_CubeAllocator.IsEnabled())
 			{
-				if (m_CubeAllocator.IsAllocatingEveryFrame())
+				if (performTest)
 				{
-					PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesAllocatedEveryFrame());
+
 				}
-				if (m_CubeAllocator.IsDeallocatingEveryFrame())
+				else
 				{
-					PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesDeallocatedEveryFrame());
+					if (m_CubeAllocator.IsAllocatingEveryFrame())
+					{
+						PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesAllocatedEveryFrame());
+					}
+					if (m_CubeAllocator.IsDeallocatingEveryFrame())
+					{
+						PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesDeallocatedEveryFrame());
+					}
 				}
 			}
 		}
@@ -98,24 +105,40 @@ void Application::DisplayProfilingResults() noexcept
 {
 	ImGui::Begin("Profiling metrics");
 	static bool isGreen = false;
-	for (auto& metric : m_ProfileMetrics)
+	if (m_ProfileMetrics.size() != 1)
 	{
-		if (isGreen)
+		for (auto& metric : m_ProfileMetrics)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-			isGreen = false;
+			if (isGreen)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+				isGreen = false;
+			}
+			else
+			{
+				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
+				isGreen = true;
+			}
+			ImGui::Text(std::to_string(metric.Duration).c_str());
+			ImGui::SameLine();
+			ImGui::Text("ms.");
+			ImGui::SameLine();
+			ImGui::Text(metric.Name.c_str());
+			ImGui::PopStyleColor();
 		}
-		else
+	}
+	else
+	{
+		for (auto& metric : m_ProfileMetrics)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255));
-			isGreen = true;
+			ImGui::Text(std::to_string(metric.Duration).c_str());
+			ImGui::SameLine();
+			ImGui::Text("ms.");
+			ImGui::SameLine();
+			ImGui::Text(metric.Name.c_str());
+			ImGui::PopStyleColor();
 		}
-		ImGui::Text(std::to_string(metric.Duration).c_str());
-		ImGui::SameLine();
-		ImGui::Text("ms.");
-		ImGui::SameLine();
-		ImGui::Text(metric.Name.c_str());
-		ImGui::PopStyleColor();
 	}
 	ImGui::End();
 	m_ProfileMetrics.clear();
