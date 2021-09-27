@@ -14,7 +14,6 @@ int Application::s_NrOfCubesToPoolAllocate = 0;
 static int nrOfCubesToNewAllocate = 0;
 static bool useNewAllocator = false;
 static bool allocateInChunks = false;
-bool Application::s_DeallocateEveryFrame = true;
 
 Application::Application() noexcept
 	: m_Running{true}
@@ -59,10 +58,13 @@ void Application::Run() noexcept
 			//Scope could be used for profiling total time.
 			if (m_CubeAllocator.IsEnabled())
 			{
-				PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, s_NrOfCubesToPoolAllocate);
-				if (s_DeallocateEveryFrame)
+				if (m_CubeAllocator.IsAllocatingEveryFrame())
 				{
-					PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, s_NrOfCubesToPoolAllocate);
+					PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesAllocatedEveryFrame());
+				}
+				if (m_CubeAllocator.IsDeallocatingEveryFrame())
+				{
+					PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesDeallocatedEveryFrame());
 				}
 			}
 		}
@@ -74,8 +76,6 @@ void Application::Run() noexcept
 				NewDeallocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
 			}
 		}
-
-		m_CubeAllocator.OnUIRender();
 
 		DisplayProfilingResults();
 		//...And ends here.
@@ -153,9 +153,14 @@ void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 void Application::RenderNewAllocatorSettingsPanel() noexcept
 {
 	ImGui::Begin("New-Allocator settings");
-	ImGui::InputInt("#Cubes to allocate", &nrOfCubesToNewAllocate, 1000);
-	if (nrOfCubesToNewAllocate < 0)
-		nrOfCubesToNewAllocate = 0;
-	ImGui::Checkbox("Enable New Allocator", &useNewAllocator);
+	ImGui::Checkbox("Enable", &useNewAllocator);
+	if (useNewAllocator)
+	{
+		ImGui::InputInt("#Cubes to allocate", &nrOfCubesToNewAllocate, 1000);
+		if (nrOfCubesToNewAllocate < 0)
+		{
+			nrOfCubesToNewAllocate = 0;
+		}
+	}
 	ImGui::End();
 }

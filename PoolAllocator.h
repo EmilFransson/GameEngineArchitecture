@@ -22,8 +22,18 @@ public:
 	[[nodiscard]] const uint64_t GetCapacity() const noexcept;
 	[[nodiscard]] const uint64_t GetEntityUsage() const noexcept;
 	[[nodiscard]] const uint64_t GetEntityCapacity() const noexcept;
+	[[nodiscard]] const uint64_t GetNrOfEntitiesAllocatedEveryFrame() const noexcept;
+	[[nodiscard]] const uint64_t GetNrOfEntitiesDeallocatedEveryFrame() const noexcept;
+	void SetNrOfEntitiesAllocatedEveryFrame(const uint64_t nrOfEntities) noexcept;
+	void SetNrOfEntitiesDeallocatedEveryFrame(const uint64_t nrOfEntities) noexcept;
 	[[nodiscard]] const bool IsEnabled() const noexcept;
+	[[nodiscard]] const bool IsAllocatingAndDeallocatingSameAmount() const noexcept;
+	[[nodiscard]] const bool IsAllocatingEveryFrame() const noexcept;
+	[[nodiscard]] const bool IsDeallocatingEveryFrame() const noexcept;
 	void ToggleEnabled() noexcept;
+	void ToggleAllocateOnFrame() noexcept;
+	void ToggleDeallocateOnFrame() noexcept;
+	void ToggleAllocDeallocSameAmount() noexcept;
 	void OnUIRender() const noexcept;
 	void FreeAllMemory(const std::vector<T*>& objects) noexcept;
 
@@ -33,9 +43,14 @@ private:
 	const char* m_Tag;
 	uint64_t m_MaxEntities;
 	uint64_t m_BytesCapacity;
-	uint64_t m_UsedBytes = 0u;
-	uint64_t m_NrOfEntities = 0u;
+	uint64_t m_UsedBytes;
+	uint64_t m_NrOfEntities;
+	uint64_t m_NrOfEntitiesAllocatedEveryFrame;
+	uint64_t m_NrOfEntitiesDeallocatedEveryFrame;
 	bool m_Enabled;
+	bool m_AllocateOnFrame;
+	bool m_DeallocateOnFrame;
+	bool m_AllocAndDeallocSameAmount;
 };
 
 template<class T>
@@ -43,12 +58,19 @@ PoolAllocator<T>::PoolAllocator(const char* tag, const uint64_t entityCapacity)
 	: m_Tag{tag}, 
 	  m_MaxEntities{ entityCapacity }, 
 	  m_BytesCapacity{ sizeof(T) * m_MaxEntities },
-	  m_Enabled{false}
+	  m_UsedBytes{0u},
+	  m_NrOfEntities{0u},
+	  m_NrOfEntitiesAllocatedEveryFrame{0u},
+	  m_NrOfEntitiesDeallocatedEveryFrame{0u},
+	  m_Enabled{false},
+	  m_AllocateOnFrame{true},
+	  m_DeallocateOnFrame{true},
+	  m_AllocAndDeallocSameAmount{false}
 {
 	m_pMemoryPool = DBG_NEW PoolChunk<T>[m_MaxEntities];
 	m_pHead = m_pMemoryPool;
 
-	for (uint32_t i{ 0u }; i < m_MaxEntities - 1; i++)
+	for (uint64_t i{ 0u }; i < m_MaxEntities - 1; i++)
 	{
 		m_pMemoryPool[i].nextPoolChunk = std::addressof(m_pMemoryPool[i + 1]);
 	}
@@ -121,9 +143,51 @@ const uint64_t PoolAllocator<T>::GetEntityCapacity() const noexcept
 }
 
 template<typename T>
+const uint64_t PoolAllocator<T>::GetNrOfEntitiesAllocatedEveryFrame() const noexcept
+{
+	return m_NrOfEntitiesAllocatedEveryFrame;
+}
+
+template<typename T>
+const uint64_t PoolAllocator<T>::GetNrOfEntitiesDeallocatedEveryFrame() const noexcept
+{
+	return m_NrOfEntitiesDeallocatedEveryFrame;
+}
+
+template<typename T>
+void PoolAllocator<T>::SetNrOfEntitiesAllocatedEveryFrame(const uint64_t nrOfEntities) noexcept
+{
+	m_NrOfEntitiesAllocatedEveryFrame = nrOfEntities;
+}
+
+template<typename T>
+void PoolAllocator<T>::SetNrOfEntitiesDeallocatedEveryFrame(const uint64_t nrOfEntities) noexcept
+{
+	m_NrOfEntitiesDeallocatedEveryFrame = nrOfEntities;
+}
+
+template<typename T>
 const bool PoolAllocator<T>::IsEnabled() const noexcept
 {
 	return m_Enabled;
+}
+
+template<typename T>
+const bool PoolAllocator<T>::IsAllocatingAndDeallocatingSameAmount() const noexcept
+{
+	return m_AllocAndDeallocSameAmount;
+}
+
+template<typename T>
+const bool PoolAllocator<T>::IsAllocatingEveryFrame() const noexcept
+{
+	return m_AllocateOnFrame;
+}
+
+template<typename T>
+const bool PoolAllocator<T>::IsDeallocatingEveryFrame() const noexcept
+{
+	return m_DeallocateOnFrame;
 }
 
 template<typename T>
@@ -132,27 +196,24 @@ void PoolAllocator<T>::ToggleEnabled() noexcept
 	m_Enabled = !m_Enabled;
 }
 
-template<class T>
-void PoolAllocator<T>::OnUIRender() const noexcept
+template<typename T>
+void PoolAllocator<T>::ToggleAllocateOnFrame() noexcept
 {
-	ImGui::Begin("Pool Allocator memory usage");
-	static float progress = 0.0f;
-
-	progress = static_cast<float>(m_UsedBytes / static_cast<float>(m_BytesCapacity));
-	progress = 1.0f - progress;
-
-	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
-	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-	ImGui::Text("Bytes free.");
-
-	char buf[64];
-#pragma warning(disable:4996)
-	sprintf(buf, "%d/%d", (int)((m_MaxEntities - m_NrOfEntities)), (int)(m_MaxEntities));
-	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), buf);
-	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-	ImGui::Text("Entity chunks available.");
-	ImGui::End();
+	m_AllocateOnFrame = !m_AllocateOnFrame;
 }
+
+template<typename T>
+void PoolAllocator<T>::ToggleDeallocateOnFrame() noexcept
+{
+	m_DeallocateOnFrame = !m_DeallocateOnFrame;
+}
+
+template<typename T>
+void PoolAllocator<T>::ToggleAllocDeallocSameAmount() noexcept
+{
+	m_AllocAndDeallocSameAmount = !m_AllocAndDeallocSameAmount;
+}
+
 /*The vector and pool allocator must "match"!*/
 template<class T>
 void PoolAllocator<T>::FreeAllMemory(const std::vector<T*>& objects) noexcept
