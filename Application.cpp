@@ -145,27 +145,8 @@ void Application::RenderNewAllocatorSettingsPanel() noexcept
 	ImGui::End();
 }
 
-void Application::StackAllocateObjects() noexcept
+void StackAllocatorTestOne()
 {
-	static int nrOfCubesToStackAllocate = 0;
-	ImGui::Begin("StackAllocator Settings");
-	static bool pressed = false;
-	if (ImGui::Checkbox("Enable", &pressed))
-	{
-		StackAllocator::GetInstance()->ToggleEnabled();
-		if (!StackAllocator::GetInstance()->IsEnabled())
-		{
-			StackAllocator::GetInstance()->CleanUp();
-		}
-	}
-
-	if (ImGui::InputInt("#Cubes to allocate.", &nrOfCubesToStackAllocate, 1000))
-	{
-		if (nrOfCubesToStackAllocate < 0)
-			nrOfCubesToStackAllocate = 0;
-	}
-
-	//A lot of small objects. 400 000 Cubes
 	if (ImGui::Button("Test Case 1 - Many small objects"))
 	{
 		const size_t n = 400000;
@@ -184,10 +165,10 @@ void Application::StackAllocateObjects() noexcept
 		//Normal new/delete allocation.
 		for (size_t i = 0; i < testCases; i++)
 		{
-			Cube* cubeArray[n];
+			std::vector<Cube*> cubeArray;
 			for (size_t j = 0; j < n; j++)
 			{
-				cubeArray[j] = StackAllocator::GetInstance()->New<Cube>();
+				cubeArray.push_back(StackAllocator::GetInstance()->New<Cube>());
 			}
 			for (size_t j = n; j > 0; j--)
 			{
@@ -195,8 +176,10 @@ void Application::StackAllocateObjects() noexcept
 			}
 		}
 	}
+}
 
-	//A few large objects. 4000 Spheres
+void StackAllocatorTestTwo()
+{
 	if (ImGui::Button("Test Case 2 - Few large objects"))
 	{
 		const size_t n = 4000;
@@ -215,10 +198,10 @@ void Application::StackAllocateObjects() noexcept
 		//Normal new/delete allocation.
 		for (size_t i = 0; i < testCases; i++)
 		{
-			Sphere* sphereArray[n];
+			std::vector<Sphere*> sphereArray;
 			for (size_t j = 0; j < n; j++)
 			{
-				sphereArray[j] = StackAllocator::GetInstance()->New<Sphere>();
+				sphereArray.push_back(StackAllocator::GetInstance()->New<Sphere>());
 			}
 			for (size_t j = n; j > 0; j--)
 			{
@@ -226,17 +209,19 @@ void Application::StackAllocateObjects() noexcept
 			}
 		}
 	}
+}
 
-	//Random objects in a random order. 50 000 objects.
+void StackAllocatorTestThree()
+{
 	if (ImGui::Button("Test Case 3 - Random objects in a random order"))
 	{
 		const size_t n = 50000;
 		const size_t testCases = 1000;
 
 		//Randomize objects. Ints are between 1-3 inclusive.
-		int randomInts[n];
+		std::vector<int> randomInts;
 		for (size_t i = 0; i < n; i++)
-			randomInts[i] = std::rand() % 3 + 1;
+			randomInts.push_back(std::rand() % 3 + 1);
 
 		//Stack allocator
 		for (size_t i = 0; i < testCases; i++)
@@ -263,19 +248,19 @@ void Application::StackAllocateObjects() noexcept
 
 		for (size_t i = 0; i < testCases; i++)
 		{
-			Shape* shapeArray[n];
+			std::vector<Shape*> shapeArray;
 			for (size_t j = 0; j < n; j++)
 			{
 				switch (randomInts[j])
 				{
 				case 1:
-					shapeArray[j] = StackAllocator::GetInstance()->New<Cube>();
+					shapeArray.push_back(StackAllocator::GetInstance()->New<Cube>());
 					break;
 				case 2:
-					shapeArray[j] = StackAllocator::GetInstance()->New<Sphere>();
+					shapeArray.push_back(StackAllocator::GetInstance()->New<Sphere>());
 					break;
 				case 3:
-					shapeArray[j] = StackAllocator::GetInstance()->New<Pyramid>();
+					shapeArray.push_back(StackAllocator::GetInstance()->New<Pyramid>());
 					break;
 				default:
 					break;
@@ -287,6 +272,34 @@ void Application::StackAllocateObjects() noexcept
 			}
 		}
 	}
+}
+
+void Application::StackAllocateObjects() noexcept
+{
+	static int nrOfCubesToStackAllocate = 0;
+	ImGui::Begin("StackAllocator Settings");
+	static bool pressed = false;
+	if (ImGui::Checkbox("Enable", &pressed))
+	{
+		StackAllocator::GetInstance()->ToggleEnabled();
+		if (!StackAllocator::GetInstance()->IsEnabled())
+		{
+			StackAllocator::GetInstance()->CleanUp();
+		}
+	}
+
+	if (ImGui::InputInt("#Cubes to allocate.", &nrOfCubesToStackAllocate, 1000))
+	{
+		if (nrOfCubesToStackAllocate < 0)
+			nrOfCubesToStackAllocate = 0;
+	}
+	//A lot of small objects. 400 000 Cubes
+	//StackAllocatorTestOne();
+	//A few large objects. 4000 Spheres
+	//StackAllocatorTestTwo();
+	//Random objects in a random order. 50 000 objects.
+	//StackAllocatorTestThree();
+	
 	ImGui::End();
 
 	if (StackAllocator::GetInstance()->IsEnabled())
