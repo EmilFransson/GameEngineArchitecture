@@ -32,6 +32,9 @@ private:
 	template<typename T>
 	void RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept;
 	void RenderNewAllocatorSettingsPanel() noexcept;
+
+	void RenderStackAllocatorSettingsPanel() noexcept;
+	void StackAllocateObjects() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
 	bool m_Running;

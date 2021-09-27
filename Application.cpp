@@ -53,7 +53,7 @@ void Application::Run() noexcept
 		//Windows part of the dock space goes here:
 		RenderPoolAllocatorSettingsPanel<Cube>(m_CubeAllocator, m_pCubesPool);
 		RenderNewAllocatorSettingsPanel();
-		//RenderStackAllocatorSettingsPanel()
+		RenderStackAllocatorSettingsPanel();
 
 		{
 			//Scope could be used for profiling total time.
@@ -74,6 +74,12 @@ void Application::Run() noexcept
 				NewDeallocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
 			}
 		}
+		{
+			if (StackAllocator::GetInstance()->IsEnabled())
+			{
+				StackAllocateObjects();
+			}
+		}
 
 		m_CubeAllocator.OnUIRender();
 
@@ -87,8 +93,9 @@ void Application::Run() noexcept
 
 		if (!Window::OnUpdate())
 		{
-			//Clean up:
+			//Free up memory:
 			m_CubeAllocator.FreeAllMemory(m_pCubesPool);
+			StackAllocator::GetInstance()->FreeAllMemory();
 			m_Running = false;
 		}
 	}
@@ -158,4 +165,45 @@ void Application::RenderNewAllocatorSettingsPanel() noexcept
 		nrOfCubesToNewAllocate = 0;
 	ImGui::Checkbox("Enable New Allocator", &useNewAllocator);
 	ImGui::End();
+}
+
+void Application::RenderStackAllocatorSettingsPanel() noexcept
+{
+	ImGui::Begin("StackAllocator");
+	static bool pressed = false;
+	if (ImGui::Checkbox("Enable", &pressed))
+	{
+		StackAllocator::GetInstance()->ToggleEnabled();
+		if (!StackAllocator::GetInstance()->IsEnabled())
+		{
+			StackAllocator::GetInstance()->CleanUp();
+		}
+	}
+	ImGui::End();
+}
+
+void Application::StackAllocateObjects() noexcept
+{
+	static int nrOfCubesToStackAllocate = 0;
+	ImGui::Begin("StackAllocator Settings");
+	if (ImGui::InputInt("#Cubes to allocate.", &nrOfCubesToStackAllocate, 1000))
+	{
+		if (nrOfCubesToStackAllocate < 0)
+			nrOfCubesToStackAllocate = 0;
+	}
+	ImGui::End();
+
+	std::string str = __FUNCTION__;
+	str.append("'Cube'");
+	str.append(" (");
+	str.append(std::to_string(nrOfCubesToStackAllocate).c_str());
+	str.append(")");
+	PROFILE_SCOPE(str);
+	for (uint64_t i{ 0u }; i < nrOfCubesToStackAllocate; i++)
+	{
+		Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
+
+	}
+
+	StackAllocator::GetInstance()->CleanUp();
 }

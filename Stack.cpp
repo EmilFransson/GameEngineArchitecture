@@ -13,4 +13,5 @@ Stack::Stack(unsigned long long stackSize)
 Stack::~Stack()
 {
 	delete[] m_pData;
+	m_pData = nullptr;
 }
