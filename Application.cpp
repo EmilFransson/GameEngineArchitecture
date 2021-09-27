@@ -158,7 +158,7 @@ void Application::StackAllocateObjects() noexcept
 		{
 			for (size_t j = 0; j < n; j++)
 			{
-				Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
+				StackAllocator::GetInstance()->New<Cube>();
 			}
 			StackAllocator::GetInstance()->CleanUp();
 		}
@@ -189,7 +189,7 @@ void Application::StackAllocateObjects() noexcept
 		{
 			for (size_t j = 0; j < n; j++)
 			{
-				Sphere* newSphere = StackAllocator::GetInstance()->New<Sphere>();
+				StackAllocator::GetInstance()->New<Sphere>();
 			}
 			StackAllocator::GetInstance()->CleanUp();
 		}
@@ -281,7 +281,7 @@ void Application::StackAllocateObjects() noexcept
 		PROFILE_SCOPE(str);
 		for (uint64_t i{ 0u }; i < nrOfCubesToStackAllocate; i++)
 		{
-			Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
+			StackAllocator::GetInstance()->New<Cube>();
 
 		}
 		//Render progressbar before cleanup to visualize usage.
