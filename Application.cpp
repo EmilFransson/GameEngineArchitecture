@@ -14,7 +14,6 @@ int Application::s_NrOfCubesToPoolAllocate = 0;
 static int nrOfCubesToNewAllocate = 0;
 static bool useNewAllocator = false;
 static bool allocateInChunks = false;
-bool Application::s_DeallocateEveryFrame = true;
 
 Application::Application() noexcept
 	: m_Running{true}
@@ -37,7 +36,7 @@ Application::Application() noexcept
 void Application::Run() noexcept
 {
 	//Send in the size in bytes
-	StackAllocator::CreateAllocator(GIGA);
+	StackAllocator::CreateAllocator(GIGA / 5);
 	while (m_Running)
 	{
 		static const FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -53,16 +52,18 @@ void Application::Run() noexcept
 		//Windows part of the dock space goes here:
 		RenderPoolAllocatorSettingsPanel<Cube>(m_CubeAllocator, m_pCubesPool);
 		RenderNewAllocatorSettingsPanel();
-		RenderStackAllocatorSettingsPanel();
 
 		{
 			//Scope could be used for profiling total time.
 			if (m_CubeAllocator.IsEnabled())
 			{
-				PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, s_NrOfCubesToPoolAllocate);
-				if (s_DeallocateEveryFrame)
+				if (m_CubeAllocator.IsAllocatingEveryFrame())
 				{
-					PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, s_NrOfCubesToPoolAllocate);
+					PoolAllocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesAllocatedEveryFrame());
+				}
+				if (m_CubeAllocator.IsDeallocatingEveryFrame())
+				{
+					PoolDeallocateObjects<Cube>(m_CubeAllocator, m_pCubesPool, m_CubeAllocator.GetNrOfEntitiesDeallocatedEveryFrame());
 				}
 			}
 		}
@@ -75,13 +76,8 @@ void Application::Run() noexcept
 			}
 		}
 		{
-			if (StackAllocator::GetInstance()->IsEnabled())
-			{
-				StackAllocateObjects();
-			}
+			StackAllocateObjects();
 		}
-
-		m_CubeAllocator.OnUIRender();
 
 		DisplayProfilingResults();
 		//...And ends here.
@@ -160,23 +156,13 @@ void Application::AllocateCubes(uint32_t nrOfCubes) noexcept
 void Application::RenderNewAllocatorSettingsPanel() noexcept
 {
 	ImGui::Begin("New-Allocator settings");
-	ImGui::InputInt("#Cubes to allocate", &nrOfCubesToNewAllocate, 1000);
-	if (nrOfCubesToNewAllocate < 0)
-		nrOfCubesToNewAllocate = 0;
-	ImGui::Checkbox("Enable New Allocator", &useNewAllocator);
-	ImGui::End();
-}
-
-void Application::RenderStackAllocatorSettingsPanel() noexcept
-{
-	ImGui::Begin("StackAllocator");
-	static bool pressed = false;
-	if (ImGui::Checkbox("Enable", &pressed))
+	ImGui::Checkbox("Enable", &useNewAllocator);
+	if (useNewAllocator)
 	{
-		StackAllocator::GetInstance()->ToggleEnabled();
-		if (!StackAllocator::GetInstance()->IsEnabled())
+		ImGui::InputInt("#Cubes to allocate", &nrOfCubesToNewAllocate, 1000);
+		if (nrOfCubesToNewAllocate < 0)
 		{
-			StackAllocator::GetInstance()->CleanUp();
+			nrOfCubesToNewAllocate = 0;
 		}
 	}
 	ImGui::End();
@@ -186,6 +172,16 @@ void Application::StackAllocateObjects() noexcept
 {
 	static int nrOfCubesToStackAllocate = 0;
 	ImGui::Begin("StackAllocator Settings");
+	static bool pressed = false;
+	if (ImGui::Checkbox("Enable", &pressed))
+	{
+		StackAllocator::GetInstance()->ToggleEnabled();
+		if (!StackAllocator::GetInstance()->IsEnabled())
+		{
+			StackAllocator::GetInstance()->CleanUp();
+		}
+	}
+
 	if (ImGui::InputInt("#Cubes to allocate.", &nrOfCubesToStackAllocate, 1000))
 	{
 		if (nrOfCubesToStackAllocate < 0)
@@ -193,17 +189,35 @@ void Application::StackAllocateObjects() noexcept
 	}
 	ImGui::End();
 
-	std::string str = __FUNCTION__;
-	str.append("'Cube'");
-	str.append(" (");
-	str.append(std::to_string(nrOfCubesToStackAllocate).c_str());
-	str.append(")");
-	PROFILE_SCOPE(str);
-	for (uint64_t i{ 0u }; i < nrOfCubesToStackAllocate; i++)
+	if (StackAllocator::GetInstance()->IsEnabled())
 	{
-		Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
+		std::string str = __FUNCTION__;
+		str.append("'Cube allocation'");
+		str.append(" (");
+		str.append(std::to_string(nrOfCubesToStackAllocate).c_str());
+		str.append(")");
+		PROFILE_SCOPE(str);
+		for (uint64_t i{ 0u }; i < nrOfCubesToStackAllocate; i++)
+		{
+			Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
 
+		}
+		//Render progressbar before cleanup to visualize usage.
+		RenderStackAllocatorProgressBar();
+		StackAllocator::GetInstance()->CleanUp();
 	}
+}
 
-	StackAllocator::GetInstance()->CleanUp();
+void Application::RenderStackAllocatorProgressBar() noexcept
+{
+	ImGui::Begin("Stack Allocator memory usage");
+	static float progress = 0.0f;
+
+	progress = static_cast<float>(StackAllocator::GetInstance()->GetStackCurrentSize() / static_cast<float>(StackAllocator::GetInstance()->GetStackMaxSize()));
+	progress = 1.0f - progress;
+
+	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::Text("Bytes free.");
+	ImGui::End();
 }
