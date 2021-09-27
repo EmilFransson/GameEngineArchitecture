@@ -39,7 +39,7 @@ void Application::Run() noexcept
 	StackAllocator::CreateAllocator(GIGA / 5);
 	while (m_Running)
 	{
-		static const FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		static const FLOAT color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 		RenderCommand::ClearBackBuffer(color);
 		RenderCommand::ClearDepthBuffer();
 		RenderCommand::BindBackBuffer();
@@ -76,30 +76,20 @@ void Application::Run() noexcept
 				NewDeallocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
 			}
 		}
-
-		{
-			if (m_buddyEnabled)
-			{
-				m_buddyAllocator.reset();
-				m_buddyAllocations.clear();
-
-				BuddyAllocate();
-				if (m_buddyDealloc)
-				{
-					BuddyDeallocate();
-				}
-			}
-		}
-
-		m_CubeAllocator.OnUIRender();
 		{
 			StackAllocateObjects();
+		}
+		{
+			if(m_buddyEnabled)
+				BuddyAllocate();
+			if (m_buddyDealloc)
+				BuddyDeallocate();
 		}
 
 		DisplayProfilingResults();
 		//...And ends here.
 		UI::EndDockSpace();
-		//No UI-windows in this part and after!
+		//No UI-windows in this part and after! 
 		UI::End();
 
 		RenderCommand::UnbindRenderTargets();
