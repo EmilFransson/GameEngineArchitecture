@@ -28,11 +28,15 @@ private:
 	void NewAllocateObjects(std::vector<T*>& objects, const uint64_t nrOfObjectsToAlloc) noexcept;
 	template<typename T>
 	void NewDeallocateObjects(std::vector<T*>& objects, const uint64_t nrOfObjectsToDealloc) noexcept;
+	void BuddyAllocate() noexcept;
+	void BuddyDeallocate() noexcept;
 	template<typename T>
 	void ResetPoolAllocator(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept;
 	template<typename T>
 	void RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept;
 	void RenderNewAllocatorSettingsPanel() noexcept;
+	// Stack allocator settings panel
+	void RenderBuddyAllocatorSettingsPanel() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
 	bool m_Running;
@@ -43,6 +47,14 @@ private:
 	std::vector<Cube*> m_pCubesNew;
 	static int s_NrOfCubesToPoolAllocate;
 	static bool s_DeallocateEveryFrame;
+	
+	// Buddy Allocator Settings
+	std::vector<void*> m_buddyAllocations;
+	int m_buddyAllocationSize;
+	int m_buddyAllocationCount;
+	bool m_buddyEnabled;
+	bool m_buddyDealloc;
+	bool m_buddyAllocatorFull;
 };
 
 template<typename T>

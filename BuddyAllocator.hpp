@@ -58,6 +58,15 @@ public:
 
 		mergeNode(freed, lvl);
 	};
+
+	void reset()
+	{
+		freeBits[0] = true;
+
+		for (auto& n : firstFree) n = nullptr;
+		firstFree[0] = reinterpret_cast<Node*>(mem);
+
+	}
 private:
 	static size_t pow2Size(size_t size)
 	{

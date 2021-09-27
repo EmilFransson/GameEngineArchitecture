@@ -6,7 +6,7 @@
 
 #define MEGA 1000000
 #define GIGA 1000000000
-using namespace std::this_thread;     // sleep_for, sleep_until
+//using namespace std::this_thread;     // sleep_for, sleep_until
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
 
@@ -53,7 +53,8 @@ void Application::Run() noexcept
 		//Windows part of the dock space goes here:
 		RenderPoolAllocatorSettingsPanel<Cube>(m_CubeAllocator, m_pCubesPool);
 		RenderNewAllocatorSettingsPanel();
-		//RenderStackAllocatorSettingsPanel()
+		//RenderStackAllocatorSettingsPanel();
+		RenderBuddyAllocatorSettingsPanel();
 
 		{
 			//Scope could be used for profiling total time.
@@ -72,6 +73,22 @@ void Application::Run() noexcept
 			{
 				NewAllocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
 				NewDeallocateObjects<Cube>(m_pCubesNew, nrOfCubesToNewAllocate);
+			}
+		}
+		{
+			// Stack Allocator goes here
+		}
+		{
+			if (m_buddyEnabled)
+			{
+				m_buddyAllocator.reset();
+				m_buddyAllocations.clear();
+
+				BuddyAllocate();
+				if (m_buddyDealloc)
+				{
+					BuddyDeallocate();
+				}
 			}
 		}
 
@@ -169,4 +186,56 @@ void Application::RenderNewAllocatorSettingsPanel() noexcept
 		nrOfCubesToNewAllocate = 0;
 	ImGui::Checkbox("Enable New Allocator", &useNewAllocator);
 	ImGui::End();
+}
+
+
+void Application::RenderBuddyAllocatorSettingsPanel() noexcept
+{
+	ImGui::Begin("Buddy Allocator");
+	ImGui::Checkbox("Enable", &m_buddyEnabled);
+	if (m_buddyEnabled)
+	{
+		ImGui::InputInt("Size of allocations", &m_buddyAllocationSize, 500);
+		ImGui::InputInt("Number of allocations", &m_buddyAllocationCount, 100);
+		ImGui::Checkbox("Deallocate", &m_buddyDealloc);
+		// Memory usage statistics
+	}
+
+	if (m_buddyAllocationSize < 0)
+		m_buddyAllocationSize = 0;
+	if (m_buddyAllocationCount < 0)
+		m_buddyAllocationCount = 0;
+
+	ImGui::End();
+}
+
+void Application::BuddyAllocate() noexcept
+{
+	if (m_buddyAllocations.size() < m_buddyAllocationCount)
+	{
+		m_buddyAllocations.clear();
+		m_buddyAllocations.resize(m_buddyAllocationCount);
+	}
+
+
+	std::string str = __FUNCTION__ " (" + std::to_string(m_buddyAllocationCount) + ")";
+	PROFILE_SCOPE(str);
+	m_buddyAllocatorFull = false;
+	for (auto i = 0u; i < m_buddyAllocationCount; ++i)
+	{
+		m_buddyAllocations[i] = m_buddyAllocator.alloc(m_buddyAllocationSize);
+		
+		if (!m_buddyAllocations[i])
+		{
+			m_buddyAllocatorFull = true;
+			break;
+		}
+	}
+}
+
+void Application::BuddyDeallocate() noexcept
+{
+	std::string str = __FUNCTION__ " (" + std::to_string(m_buddyAllocationCount) + ")";
+	PROFILE_SCOPE(str);
+	std::for_each(m_buddyAllocations.begin(), m_buddyAllocations.end(), [this](void* ptr) { m_buddyAllocator.free(ptr, m_buddyAllocationSize); });
 }
