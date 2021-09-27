@@ -3,7 +3,7 @@
 #include "UI.h"
 #include "Profiler.h"
 #include "PoolAllocator.h"
-#include "Cube.h"
+#include "ObjectClasses.h"
 
 #define TOKENPASTE(x, y) x ## y
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
@@ -18,7 +18,6 @@ public:
 	void Run() noexcept;
 private:
 	void DisplayProfilingResults() noexcept;
-	void AllocateCubes(uint32_t nrOfCubes) noexcept;
 	template<typename T>
 	void PoolAllocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, const uint64_t nrOfObjectsToAlloc) noexcept;
 	template<typename T>

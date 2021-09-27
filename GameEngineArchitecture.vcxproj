@@ -87,7 +87,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="Cube.cpp" />
+    <ClCompile Include="ObjectClasses.cpp" />
     <ClCompile Include="DXDebug.cpp" />
     <ClCompile Include="Entrypoint.cpp" />
     <ClCompile Include="Graphics.cpp" />
@@ -137,7 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
-    <ClInclude Include="Cube.h" />
+    <ClInclude Include="ObjectClasses.h" />
     <ClInclude Include="DXDebug.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="PoolAllocator.h" />
