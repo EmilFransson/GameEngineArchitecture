@@ -83,7 +83,7 @@ void Application::Run() noexcept
 			}
 		}
 		{
-			StackAllocateObjects();
+			//StackAllocateObjects();
 		}
 
 		DisplayProfilingResults();
@@ -327,6 +327,11 @@ void Application::PerformPoolAllocatorTest1() noexcept
 	PoolAllocator<Cube> cubeAllocator("Cube Allocator", 400000u);
 	std::vector<Cube*> cubes;
 	cubes.reserve(400000);
+	for (uint64_t i = 0u; i < 400000; i++)
+	{
+		Cube* cube = nullptr;
+		cubes.push_back(cube);
+	}
 	
 	float allocationTimeSum = 0.0f;
 	float deallocationTimeSum = 0.0f;
@@ -389,4 +394,12 @@ void Application::PerformPoolAllocatorTest1() noexcept
 	m_TestResults.push_back(result);
 	
 	m_RepeatedTests.clear();
+}
+
+void Application::PerformPoolAllocatorTest2() noexcept
+{
+}
+
+void Application::PerformPoolAllocatorTest3() noexcept
+{
 }

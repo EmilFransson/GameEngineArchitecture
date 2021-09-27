@@ -38,6 +38,8 @@ private:
 	void StackAllocateObjects() noexcept;
 	void RenderStackAllocatorProgressBar() noexcept;
 	void PerformPoolAllocatorTest1() noexcept;
+	void PerformPoolAllocatorTest2() noexcept;
+	void PerformPoolAllocatorTest3() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
 	std::vector<ProfileMetrics> m_RepeatedTests;
@@ -196,7 +198,14 @@ void Application::RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocat
 		{
 			PerformPoolAllocatorTest1();
 		}
-
+		if (ImGui::Button("Test 2 - Placeholder"))
+		{
+			PerformPoolAllocatorTest2();
+		}
+		if (ImGui::Button("Test 3 - Placeholder"))
+		{
+			PerformPoolAllocatorTest3();
+		}
 
 		RenderPoolAllocatorProgressBar<T>(poolAllocator);
 	}
