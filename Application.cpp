@@ -147,21 +147,63 @@ void Application::StackAllocateObjects() noexcept
 			nrOfCubesToStackAllocate = 0;
 	}
 
-	//A lot of small objects.
+	//A lot of small objects. 400 000 Cubes
 	if (ImGui::Button("Test Case 1 - Many small objects"))
 	{
+		//Stack Allocator
 		for (size_t i = 0; i < 1000; i++)
 		{
+			for (size_t j = 0; j < 400000; j++)
+			{
+				Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
+			}
+			StackAllocator::GetInstance()->CleanUp();
+		}
 
+		//Normal new/delete allocation.
+		for (size_t i = 0; i < 1000; i++)
+		{
+			Cube* cubeArray[400000];
+			for (size_t j = 0; j < 400000; j++)
+			{
+				cubeArray[j] = StackAllocator::GetInstance()->New<Cube>();
+			}
+			for (size_t j = 40000; j > 0; j--)
+			{
+				delete cubeArray[j - 1];
+			}
 		}
 	}
+
+	//A few large objects. 4000 Spheres
 	if (ImGui::Button("Test Case 2 - Few large objects"))
 	{
+		//Stack Allocator
 		for (size_t i = 0; i < 1000; i++)
 		{
+			for (size_t j = 0; j < 4000; j++)
+			{
+				Sphere* newSphere = StackAllocator::GetInstance()->New<Sphere>();
+			}
+			StackAllocator::GetInstance()->CleanUp();
+		}
 
+		//Normal new/delete allocation.
+		for (size_t i = 0; i < 1000; i++)
+		{
+			Sphere* sphereArray[4000];
+			for (size_t j = 0; j < 4000; j++)
+			{
+				sphereArray[j] = StackAllocator::GetInstance()->New<Sphere>();
+			}
+			for (size_t j = 4000; j > 0; j--)
+			{
+				delete sphereArray[j - 1];
+			}
 		}
 	}
+
+	//Random objects in a random order.
 	if (ImGui::Button("Test Case 3 - Random objects in a random order"))
 	{
 		for (size_t i = 0; i < 1000; i++)
