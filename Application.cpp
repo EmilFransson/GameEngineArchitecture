@@ -83,7 +83,7 @@ void Application::Run() noexcept
 			}
 		}
 		{
-			//StackAllocateObjects();
+			StackAllocateObjects();
 		}
 
 		DisplayProfilingResults();
