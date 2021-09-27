@@ -150,10 +150,13 @@ void Application::StackAllocateObjects() noexcept
 	//A lot of small objects. 400 000 Cubes
 	if (ImGui::Button("Test Case 1 - Many small objects"))
 	{
+		const size_t n = 400000;
+		const size_t testCases = 1000;
+
 		//Stack Allocator
-		for (size_t i = 0; i < 1000; i++)
+		for (size_t i = 0; i < testCases; i++)
 		{
-			for (size_t j = 0; j < 400000; j++)
+			for (size_t j = 0; j < n; j++)
 			{
 				Cube* newCube = StackAllocator::GetInstance()->New<Cube>();
 			}
@@ -161,14 +164,14 @@ void Application::StackAllocateObjects() noexcept
 		}
 
 		//Normal new/delete allocation.
-		for (size_t i = 0; i < 1000; i++)
+		for (size_t i = 0; i < testCases; i++)
 		{
-			Cube* cubeArray[400000];
-			for (size_t j = 0; j < 400000; j++)
+			Cube* cubeArray[n];
+			for (size_t j = 0; j < n; j++)
 			{
 				cubeArray[j] = StackAllocator::GetInstance()->New<Cube>();
 			}
-			for (size_t j = 40000; j > 0; j--)
+			for (size_t j = n; j > 0; j--)
 			{
 				delete cubeArray[j - 1];
 			}
@@ -178,10 +181,13 @@ void Application::StackAllocateObjects() noexcept
 	//A few large objects. 4000 Spheres
 	if (ImGui::Button("Test Case 2 - Few large objects"))
 	{
+		const size_t n = 4000;
+		const size_t testCases = 1000;
+
 		//Stack Allocator
-		for (size_t i = 0; i < 1000; i++)
+		for (size_t i = 0; i < testCases; i++)
 		{
-			for (size_t j = 0; j < 4000; j++)
+			for (size_t j = 0; j < n; j++)
 			{
 				Sphere* newSphere = StackAllocator::GetInstance()->New<Sphere>();
 			}
@@ -189,26 +195,78 @@ void Application::StackAllocateObjects() noexcept
 		}
 
 		//Normal new/delete allocation.
-		for (size_t i = 0; i < 1000; i++)
+		for (size_t i = 0; i < testCases; i++)
 		{
-			Sphere* sphereArray[4000];
-			for (size_t j = 0; j < 4000; j++)
+			Sphere* sphereArray[n];
+			for (size_t j = 0; j < n; j++)
 			{
 				sphereArray[j] = StackAllocator::GetInstance()->New<Sphere>();
 			}
-			for (size_t j = 4000; j > 0; j--)
+			for (size_t j = n; j > 0; j--)
 			{
 				delete sphereArray[j - 1];
 			}
 		}
 	}
 
-	//Random objects in a random order.
+	//Random objects in a random order. 50 000 objects.
 	if (ImGui::Button("Test Case 3 - Random objects in a random order"))
 	{
-		for (size_t i = 0; i < 1000; i++)
-		{
+		const size_t n = 50000;
+		const size_t testCases = 1000;
 
+		//Randomize objects. Ints are between 1-3 inclusive.
+		int randomInts[n];
+		for (size_t i = 0; i < n; i++)
+			randomInts[i] = std::rand() % 3 + 1;
+
+		//Stack allocator
+		for (size_t i = 0; i < testCases; i++)
+		{
+			for (size_t j = 0; j < n; j++)
+			{
+				switch (randomInts[j])
+				{
+				case 1:
+					StackAllocator::GetInstance()->New<Cube>();
+					break;
+				case 2:
+					StackAllocator::GetInstance()->New<Sphere>();
+					break;
+				case 3:
+					StackAllocator::GetInstance()->New<Pyramid>();
+					break;
+				default:
+					break;
+				}
+			}
+			StackAllocator::GetInstance()->CleanUp();
+		}
+
+		for (size_t i = 0; i < testCases; i++)
+		{
+			Shape* shapeArray[n];
+			for (size_t j = 0; j < n; j++)
+			{
+				switch (randomInts[j])
+				{
+				case 1:
+					shapeArray[j] = StackAllocator::GetInstance()->New<Cube>();
+					break;
+				case 2:
+					shapeArray[j] = StackAllocator::GetInstance()->New<Sphere>();
+					break;
+				case 3:
+					shapeArray[j] = StackAllocator::GetInstance()->New<Pyramid>();
+					break;
+				default:
+					break;
+				}
+			}
+			for (size_t j = n; j > 0; j--)
+			{
+				delete shapeArray[j - 1];
+			}
 		}
 	}
 	ImGui::End();
