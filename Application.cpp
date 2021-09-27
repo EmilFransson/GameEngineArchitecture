@@ -117,6 +117,17 @@ void Application::DisplayProfilingResults() noexcept
 	}
 	ImGui::End();
 	m_ProfileMetrics.clear();
+
+	ImGui::Begin("Test Results");
+	for (auto& testResult : m_TestResults)
+	{
+		ImGui::Text(std::to_string(testResult.Duration).c_str());
+		ImGui::SameLine();
+		ImGui::Text("ms.");
+		ImGui::SameLine();
+		ImGui::Text(testResult.Name.c_str());
+	}
+	ImGui::End();
 }
 
 void Application::RenderNewAllocatorSettingsPanel() noexcept
@@ -209,4 +220,73 @@ void Application::RenderStackAllocatorProgressBar() noexcept
 	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 	ImGui::Text("Bytes free.");
 	ImGui::End();
+}
+
+void Application::PerformPoolAllocatorTest1() noexcept
+{
+	PoolAllocator<Cube> cubeAllocator("Cube Allocator", 400000u);
+	std::vector<Cube*> cubes;
+	cubes.reserve(400000);
+	
+	float allocationTimeSum = 0.0f;
+	float deallocationTimeSum = 0.0f;
+	for (uint64_t i{ 0u }; i < 1000; i++)
+	{
+		{
+			PROFILE_TEST("Cube Pool allocation: Test 1 - 400 000 cubes");
+			for (uint64_t j{ 0u }; j < 400000; j++)
+			{
+				cubes[j] = cubeAllocator.New();
+			}
+		}
+		allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		{
+			PROFILE_TEST("Cube Pool deallocation: Test 1 - 400 000 cubes");
+			for (uint64_t j{ 0u }; j < 400000; j++)
+			{
+				cubeAllocator.Delete(cubes[j]);
+			}
+		}
+		deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+	}
+	ProfileMetrics result = {};
+	result.Name = "Cube Pool allocation: Test 1 - 400 000 cubes";
+	result.Duration = allocationTimeSum / 1000.0f;
+	m_TestResults.push_back(result);
+	result.Name = "Cube Pool deallocation: Test 1 - 400 000 cubes";
+	result.Duration = deallocationTimeSum / 1000.0f;
+	m_TestResults.push_back(result);
+	
+	m_RepeatedTests.clear();
+	result = {}; 
+	allocationTimeSum = 0.0f;
+	deallocationTimeSum = 0.0f;
+	
+	for (uint64_t i{ 0u }; i < 1000u; i++)
+	{
+		{
+			PROFILE_TEST("New allocation: Test 1 - 400 000 cubes");
+			for (uint64_t j{ 0u }; j < 400000; j++)
+			{
+				cubes[j] = DBG_NEW Cube;
+			}
+		}
+		allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		{
+			PROFILE_TEST("New deallocation: Test 1 - 400 000 cubes");
+			for (uint64_t k{ 0u }; k < 400000; k++)
+			{
+				delete cubes[k];
+			}
+		}
+		deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+	}
+	result.Name = "Cube New allocation: Test 1 - 400 000 cubes";
+	result.Duration = allocationTimeSum / 1000.0f;
+	m_TestResults.push_back(result);
+	result.Name = "Cube Delete deallocation: Test 1 - 400 000 cubes";
+	result.Duration = deallocationTimeSum / 1000.0f;
+	m_TestResults.push_back(result);
+	
+	m_RepeatedTests.clear();
 }

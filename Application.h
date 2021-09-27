@@ -9,6 +9,7 @@
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
 #define PROFILE_FUNC Profiler TOKENPASTE2(profiler, __LINE__) (__FUNCTION__, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
 #define PROFILE_SCOPE(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
+#define PROFILE_TEST(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName, [&](ProfileMetrics profileMetrics) {m_RepeatedTests.push_back(std::move(profileMetrics)); })
 
 class Application
 {
@@ -36,8 +37,11 @@ private:
 
 	void StackAllocateObjects() noexcept;
 	void RenderStackAllocatorProgressBar() noexcept;
+	void PerformPoolAllocatorTest1() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
+	std::vector<ProfileMetrics> m_RepeatedTests;
+	std::vector<ProfileMetrics> m_TestResults;
 	bool m_Running;
 	std::unique_ptr<UI> m_pImGui;
 	PoolAllocator<Cube> m_CubeAllocator = PoolAllocator<Cube>("Cube allocator");
@@ -188,6 +192,12 @@ void Application::RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocat
 				poolAllocator.SetNrOfEntitiesDeallocatedEveryFrame(nrOfObjectsToAllocAndDealloc);
 			}
 		}
+		if (ImGui::Button("Test 1 - 400 000 cubes"))
+		{
+			PerformPoolAllocatorTest1();
+		}
+
+
 		RenderPoolAllocatorProgressBar<T>(poolAllocator);
 	}
 	ImGui::End();
