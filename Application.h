@@ -23,7 +23,7 @@ private:
 	template<typename T>
 	void PoolAllocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, const uint64_t nrOfObjectsToAlloc) noexcept;
 	template<typename T>
-	void PoolDeallocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, const uint64_t nrOfObjectsToDealloc) noexcept;
+	void PoolDeallocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, uint64_t nrOfObjectsToDealloc) noexcept;
 	template<typename T>
 	void NewAllocateObjects(std::vector<T*>& objects, const uint64_t nrOfObjectsToAlloc) noexcept;
 	template<typename T>
@@ -35,8 +35,12 @@ private:
 	template<typename T>
 	void RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept;
 	void RenderNewAllocatorSettingsPanel() noexcept;
-	// Stack allocator settings panel
 	void RenderBuddyAllocatorSettingsPanel() noexcept;
+	template<typename T>
+	void RenderPoolAllocatorProgressBar(PoolAllocator<T>& poolAllocator) noexcept;
+
+	void StackAllocateObjects() noexcept;
+	void RenderStackAllocatorProgressBar() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
 	bool m_Running;
@@ -47,7 +51,7 @@ private:
 	std::vector<Cube*> m_pCubesNew;
 	static int s_NrOfCubesToPoolAllocate;
 	static bool s_DeallocateEveryFrame;
-	
+
 	// Buddy Allocator Settings
 	std::vector<void*> m_buddyAllocations;
 	int m_buddyAllocationSize;
@@ -65,17 +69,13 @@ void Application::PoolAllocateObjects(PoolAllocator<T>& poolAllocator, std::vect
 		//PoolAllocator is full.
 		return;
 	}
-	std::string str = __FUNCTION__;
-	str.append(" '");
-	str.append(poolAllocator.GetTag());
-	str.append("' (");
-	str.append(std::to_string(nrOfObjectsToAlloc).c_str());
-	str.append(")");
 	uint64_t allocationLimit = poolAllocator.GetEntityUsage() + nrOfObjectsToAlloc;
 	if (allocationLimit > poolAllocator.GetEntityCapacity())
 	{
-		allocationLimit = poolAllocator.GetEntityCapacity();
+		return;
 	}
+	std::string str = __FUNCTION__;
+	str.append(" '").append(poolAllocator.GetTag()).append("' (").append(std::to_string(nrOfObjectsToAlloc).c_str()).append(")");
 	PROFILE_SCOPE(str);
 	for (uint64_t i{ poolAllocator.GetEntityUsage() }; i < allocationLimit; i++)
 	{
@@ -84,16 +84,22 @@ void Application::PoolAllocateObjects(PoolAllocator<T>& poolAllocator, std::vect
 }
 
 template<typename T>
-void Application::PoolDeallocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, const uint64_t nrOfObjectsToDealloc) noexcept
+void Application::PoolDeallocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, uint64_t nrOfObjectsToDealloc) noexcept
 {
+	int start = static_cast<int>(poolAllocator.GetEntityUsage() - 1);
+	if (start < 0)
+	{
+		return;
+	}
+	if (nrOfObjectsToDealloc > poolAllocator.GetEntityUsage())
+	{
+		return;
+	}
 	std::string str = __FUNCTION__;
-	str.append(" '");
-	str.append(poolAllocator.GetTag());
-	str.append("' (");
-	str.append(std::to_string(nrOfObjectsToDealloc).c_str());
-	str.append(")");
+	str.append(" '").append(poolAllocator.GetTag()).append("' (").append(std::to_string(nrOfObjectsToDealloc).c_str()).append(")");
+	int end = static_cast<int>(start - nrOfObjectsToDealloc);
 	PROFILE_SCOPE(str);
-	for (uint64_t i{ 0u }; i < nrOfObjectsToDealloc; ++i)
+	for (int i{ start }; i > end; i--)
 	{
 		poolAllocator.Delete(objects[i]);
 	}
@@ -135,8 +141,7 @@ template<typename T>
 void Application::RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept
 {
 	std::string settings = "PoolAllocator Settings (";
-	settings.append(poolAllocator.GetTag());
-	settings.append(")");
+	settings.append(poolAllocator.GetTag()).append(")");
 	ImGui::Begin(settings.c_str());
 	static bool pressed = false;
 	if (ImGui::Checkbox("Enable", &pressed))
@@ -147,15 +152,83 @@ void Application::RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocat
 			ResetPoolAllocator<Cube>(poolAllocator, objects);
 		}
 	}
-	if (ImGui::Checkbox("Deallocate every frame", &s_DeallocateEveryFrame))
+	if (poolAllocator.IsEnabled())
 	{
-		if (s_DeallocateEveryFrame)
-			ResetPoolAllocator<Cube>(poolAllocator, objects);
+		static bool pressedAlloc = true;
+		static bool allocDeallocSame = false;
+		if (ImGui::Checkbox("Alloc & Dealloc same amount", &allocDeallocSame))
+		{
+			poolAllocator.ToggleAllocDeallocSameAmount();
+		}
+		if (ImGui::Checkbox("Allocate on frame", &pressedAlloc))
+		{
+			poolAllocator.ToggleAllocateOnFrame();
+		}
+		static bool pressedDealloc = true;
+		if (ImGui::Checkbox("Deallocate on frame", &pressedDealloc))
+		{
+			poolAllocator.ToggleDeallocateOnFrame();
+		}
+		if (!poolAllocator.IsAllocatingAndDeallocatingSameAmount())
+		{
+			int nrOfObjectsToAlloc = static_cast<int>(poolAllocator.GetNrOfEntitiesAllocatedEveryFrame());
+			if (ImGui::InputInt("#Objects to allocate.", &nrOfObjectsToAlloc, 1000))
+			{
+				if (nrOfObjectsToAlloc < 0)
+				{
+					nrOfObjectsToAlloc = 0;
+				}
+				poolAllocator.SetNrOfEntitiesAllocatedEveryFrame(nrOfObjectsToAlloc);
+			}
+			int nrOfObjectsToDealloc = static_cast<int>(poolAllocator.GetNrOfEntitiesDeallocatedEveryFrame());
+			if (ImGui::InputInt("#Objects to deallocate.", &nrOfObjectsToDealloc, 1000))
+			{
+				if (nrOfObjectsToDealloc < 0)
+				{
+					nrOfObjectsToDealloc = 0;
+				}
+				poolAllocator.SetNrOfEntitiesDeallocatedEveryFrame(nrOfObjectsToDealloc);
+			}
+		}
+		else
+		{
+			static int nrOfObjectsToAllocAndDealloc = 0;
+			if (ImGui::InputInt("#Objects to Allocate/Deallocate.", &nrOfObjectsToAllocAndDealloc, 1000))
+			{
+				if (nrOfObjectsToAllocAndDealloc < 0)
+				{
+					nrOfObjectsToAllocAndDealloc = 0;
+				}
+				poolAllocator.SetNrOfEntitiesAllocatedEveryFrame(nrOfObjectsToAllocAndDealloc);
+				poolAllocator.SetNrOfEntitiesDeallocatedEveryFrame(nrOfObjectsToAllocAndDealloc);
+			}
+		}
+		RenderPoolAllocatorProgressBar<T>(poolAllocator);
 	}
-	if (ImGui::InputInt("#Cubes to allocate.", &s_NrOfCubesToPoolAllocate, 1000))
-	{
-		if (s_NrOfCubesToPoolAllocate < 0)
-			s_NrOfCubesToPoolAllocate = 0;
-	}
+	ImGui::End();
+}
+
+template<typename T>
+void Application::RenderPoolAllocatorProgressBar(PoolAllocator<T>& poolAllocator) noexcept
+{
+	ImGui::Begin("Pool Allocator memory usage");
+	ImGui::Text("Tag:");
+	ImGui::SameLine();
+	ImGui::Text(poolAllocator.GetTag());
+	static float progress = 0.0f;
+
+	progress = static_cast<float>(poolAllocator.GetUsage() / static_cast<float>(poolAllocator.GetCapacity()));
+	progress = 1.0f - progress;
+
+	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::Text("Bytes free.");
+
+	char buf[64];
+#pragma warning(disable:4996)
+	sprintf(buf, "%d/%d", (int)((poolAllocator.GetEntityCapacity() - poolAllocator.GetEntityUsage())), (int)(poolAllocator.GetEntityCapacity()));
+	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), buf);
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::Text("Entity chunks available.");
 	ImGui::End();
 }
