@@ -145,73 +145,121 @@ void Application::RenderNewAllocatorSettingsPanel() noexcept
 	ImGui::End();
 }
 
-void StackAllocatorTestOne()
+void Application::StackAllocatorTestOne()
 {
 	if (ImGui::Button("Test Case 1 - Many small objects"))
 	{
 		const size_t n = 400000;
 		const size_t testCases = 1000;
 
+		float allocationTimeSum = 0.0f;
 		//Stack Allocator
 		for (size_t i = 0; i < testCases; i++)
 		{
-			for (size_t j = 0; j < n; j++)
 			{
-				StackAllocator::GetInstance()->New<Cube>();
+				PROFILE_TEST("Cube Stack allocation & deallocation: Test 1 - 400 000 cubes");
+				for (size_t j = 0; j < n; j++)
+				{
+					StackAllocator::GetInstance()->New<Cube>();
+				}
+				StackAllocator::GetInstance()->CleanUp();
 			}
-			StackAllocator::GetInstance()->CleanUp();
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
+		
+		ProfileMetrics result = {};
+		result.Name = "Cube Stack allocation: Test 1 - 400 000 cubes";
+		result.Duration = allocationTimeSum / 1000.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		result = {};
+		allocationTimeSum = 0.0f;
 
 		//Normal new/delete allocation.
 		for (size_t i = 0; i < testCases; i++)
 		{
-			std::vector<Cube*> cubeArray;
-			for (size_t j = 0; j < n; j++)
 			{
-				cubeArray.push_back(StackAllocator::GetInstance()->New<Cube>());
+				PROFILE_TEST("New allocation & deallocation: Test 1 - 400 000 cubes");
+				std::vector<Cube*> cubeArray;
+				for (size_t j = 0; j < n; j++)
+				{
+					cubeArray.push_back(new Cube());
+				}
+				for (size_t j = n; j > 0; j--)
+				{
+					delete cubeArray[j - 1];
+				}
 			}
-			for (size_t j = n; j > 0; j--)
-			{
-				delete cubeArray[j - 1];
-			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
+
+		result.Name = "Cube New allocation: Test 1 - 400 000 cubes";
+		result.Duration = allocationTimeSum / 1000.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
 	}
 }
 
-void StackAllocatorTestTwo()
+void Application::StackAllocatorTestTwo()
 {
 	if (ImGui::Button("Test Case 2 - Few large objects"))
 	{
 		const size_t n = 4000;
 		const size_t testCases = 1000;
 
+		float allocationTimeSum = 0.0f;
 		//Stack Allocator
 		for (size_t i = 0; i < testCases; i++)
 		{
-			for (size_t j = 0; j < n; j++)
 			{
-				StackAllocator::GetInstance()->New<Sphere>();
+				PROFILE_TEST("Sphere Stack allocation & deallocation: Test 2 - 4000 Spheres");
+				for (size_t j = 0; j < n; j++)
+				{
+					StackAllocator::GetInstance()->New<Sphere>();
+				}
+				StackAllocator::GetInstance()->CleanUp();
 			}
-			StackAllocator::GetInstance()->CleanUp();
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
+
+		ProfileMetrics result = {};
+		result.Name = "Sphere Stack allocation: Test 2 - 4000 Spheres";
+		result.Duration = allocationTimeSum / 1000.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		result = {};
+		allocationTimeSum = 0.0f;
 
 		//Normal new/delete allocation.
 		for (size_t i = 0; i < testCases; i++)
 		{
-			std::vector<Sphere*> sphereArray;
-			for (size_t j = 0; j < n; j++)
 			{
-				sphereArray.push_back(StackAllocator::GetInstance()->New<Sphere>());
+				PROFILE_TEST("Sphere New allocation & deallocation: Test 2 - 4000 Spheres");
+				std::vector<Sphere*> sphereArray;
+				for (size_t j = 0; j < n; j++)
+				{
+					sphereArray.push_back(new Sphere());
+				}
+				for (size_t j = n; j > 0; j--)
+				{
+					delete sphereArray[j - 1];
+				}
 			}
-			for (size_t j = n; j > 0; j--)
-			{
-				delete sphereArray[j - 1];
-			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
+
+		result.Name = "Sphere New allocation: Test 2 - 4000 Spheres";
+		result.Duration = allocationTimeSum / 1000.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
 	}
 }
 
-void StackAllocatorTestThree()
+void Application::StackAllocatorTestThree()
 {
 	if (ImGui::Button("Test Case 3 - Random objects in a random order"))
 	{
@@ -223,54 +271,78 @@ void StackAllocatorTestThree()
 		for (size_t i = 0; i < n; i++)
 			randomInts.push_back(std::rand() % 3 + 1);
 
+		float allocationTimeSum = 0.0f;
 		//Stack allocator
 		for (size_t i = 0; i < testCases; i++)
 		{
-			for (size_t j = 0; j < n; j++)
 			{
-				switch (randomInts[j])
+				PROFILE_TEST("Random Stack allocation & deallocation: Test 3 - 50 000 objects");
+				for (size_t j = 0; j < n; j++)
 				{
-				case 1:
-					StackAllocator::GetInstance()->New<Cube>();
-					break;
-				case 2:
-					StackAllocator::GetInstance()->New<Sphere>();
-					break;
-				case 3:
-					StackAllocator::GetInstance()->New<Pyramid>();
-					break;
-				default:
-					break;
+					switch (randomInts[j])
+					{
+					case 1:
+						StackAllocator::GetInstance()->New<Cube>();
+						break;
+					case 2:
+						StackAllocator::GetInstance()->New<Sphere>();
+						break;
+					case 3:
+						StackAllocator::GetInstance()->New<Pyramid>();
+						break;
+					default:
+						break;
+					}
 				}
+				StackAllocator::GetInstance()->CleanUp();
 			}
-			StackAllocator::GetInstance()->CleanUp();
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
 
+		ProfileMetrics result = {};
+		result.Name = "Random Stack allocation: Test 3 - 50 000 objects";
+		result.Duration = allocationTimeSum / 1000.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		result = {};
+		allocationTimeSum = 0.0f;
+
+		//Normal new/delete
 		for (size_t i = 0; i < testCases; i++)
 		{
-			std::vector<Shape*> shapeArray;
-			for (size_t j = 0; j < n; j++)
 			{
-				switch (randomInts[j])
+				PROFILE_TEST("Random New allocation & deallocation: Test 3 - 50 000 objects");
+				std::vector<Shape*> shapeArray;
+				for (size_t j = 0; j < n; j++)
 				{
-				case 1:
-					shapeArray.push_back(StackAllocator::GetInstance()->New<Cube>());
-					break;
-				case 2:
-					shapeArray.push_back(StackAllocator::GetInstance()->New<Sphere>());
-					break;
-				case 3:
-					shapeArray.push_back(StackAllocator::GetInstance()->New<Pyramid>());
-					break;
-				default:
-					break;
+					switch (randomInts[j])
+					{
+					case 1:
+						shapeArray.push_back(new Cube());
+						break;
+					case 2:
+						shapeArray.push_back(new Sphere());
+						break;
+					case 3:
+						shapeArray.push_back(new Pyramid());
+						break;
+					default:
+						break;
+					}
+				}
+				for (size_t j = n; j > 0; j--)
+				{
+					delete shapeArray[j - 1];
 				}
 			}
-			for (size_t j = n; j > 0; j--)
-			{
-				delete shapeArray[j - 1];
-			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
+		result.Name = "Random New allocation: Test 3 - 50 000 objects";
+		result.Duration = allocationTimeSum / 1000.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
 	}
 }
 
@@ -294,11 +366,11 @@ void Application::StackAllocateObjects() noexcept
 			nrOfCubesToStackAllocate = 0;
 	}
 	//A lot of small objects. 400 000 Cubes
-	//StackAllocatorTestOne();
+	StackAllocatorTestOne();
 	//A few large objects. 4000 Spheres
-	//StackAllocatorTestTwo();
+	StackAllocatorTestTwo();
 	//Random objects in a random order. 50 000 objects.
-	//StackAllocatorTestThree();
+	StackAllocatorTestThree();
 	
 	ImGui::End();
 

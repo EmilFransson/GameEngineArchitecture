@@ -36,6 +36,9 @@ private:
 	void RenderPoolAllocatorProgressBar(PoolAllocator<T>& poolAllocator) noexcept;
 
 	void StackAllocateObjects() noexcept;
+	void StackAllocatorTestOne();
+	void StackAllocatorTestTwo();
+	void StackAllocatorTestThree();
 	void RenderStackAllocatorProgressBar() noexcept;
 	void PerformPoolAllocatorTest1() noexcept;
 	void PerformPoolAllocatorTest2() noexcept;
