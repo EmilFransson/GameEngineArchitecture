@@ -22,6 +22,7 @@ private:
 private:
 	Node* firstFree[LEVELS] = {nullptr};
 	std::bitset<(1 << LEVELS) - 1> freeBits = {true};
+	size_t unusedMemory = MAX_BLOCK;
 public:
 	BuddyAllocator()
 	{
@@ -36,11 +37,14 @@ public:
 	[[nodiscard]]
 	void* alloc(size_t size)
 	{
+		if (size == 0 || size > MAX_BLOCK)
+			return nullptr;
 		auto lvl = levelFromSize(size);
 		Node* node = getNodeAtLevel(lvl);
 		if (!node)
 			return nullptr;
 
+		unusedMemory -= pow2Size(size);
 		firstFree[lvl] = node->next;
 		return reinterpret_cast<void*>(node);
 	};
@@ -52,11 +56,10 @@ public:
 		int lvl = levelFromSize(size);
 
 		Node* freed = (Node*)ptr;
-		if (firstFree[lvl]) firstFree[lvl]->prev = freed;
-		freed[0] = Node{nullptr, firstFree[lvl] == freed ? nullptr : firstFree[lvl]};
-		firstFree[lvl] = freed;
 
 		mergeNode(freed, lvl);
+
+		unusedMemory += pow2Size(size);
 	};
 
 	void reset()
@@ -65,20 +68,23 @@ public:
 
 		for (auto& n : firstFree) n = nullptr;
 		firstFree[0] = reinterpret_cast<Node*>(mem);
-
+		firstFree[0][0] = Node{nullptr, nullptr};
+		unusedMemory = MAX_BLOCK;
 	}
+
+	size_t getUnusedMemory() { return unusedMemory; }
 private:
 	static size_t pow2Size(size_t size)
 	{
 		size_t ret = MIN_BLOCK;
-		for (; ret < size; ret *= 2);
+		for (; ret < size; ret <<= 1);
 		return ret;
 	}
 	static int levelFromSize(size_t size)
 	{
 		if (size <= MIN_BLOCK) return LEVELS - 1;
 		size = pow2Size(size);
-		size >>= 9; // size /= 512
+		size >>= MIN; // size /= MIN_BLOCK
 		int level;
 		for (level = LEVELS - 1; size > 1; --level)
 			size >>= 1;
@@ -115,6 +121,7 @@ private:
 		second[0] = Node{nullptr, nullptr};
 		freeBits[indexOf(second, level)] = true;
 		firstFree[level] = first;
+
 		return first;
 	}
 
@@ -128,6 +135,11 @@ private:
 	{
 		const size_t index = indexOf(node, level);
 		freeBits[index] = true;
+
+		if (firstFree[level]) firstFree[level]->prev = node;
+		node[0] = Node{nullptr, firstFree[level] == node ? nullptr : firstFree[level]};
+		firstFree[level] = node;
+
 		if (level == 0)
 		{
 			return;

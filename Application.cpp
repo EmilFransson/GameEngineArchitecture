@@ -192,10 +192,14 @@ void Application::RenderBuddyAllocatorSettingsPanel() noexcept
 	ImGui::Checkbox("Enable", &m_buddyEnabled);
 	if (m_buddyEnabled)
 	{
-		ImGui::InputInt("Size of allocations", &m_buddyAllocationSize, 500);
-		ImGui::InputInt("Number of allocations", &m_buddyAllocationCount, 100);
+		ImGui::InputInt("Size of allocations", &m_buddyAllocationSize, 512);
+		ImGui::InputInt("Number of allocations", &m_buddyAllocationCount, 1000);
 		ImGui::Checkbox("Deallocate", &m_buddyDealloc);
-		// Memory usage statistics
+		if (ImGui::Button("Reset"))
+		{
+			m_buddyAllocator.reset();
+		}
+		RenderBuddyProgressBar();
 	}
 
 	if (m_buddyAllocationSize < 0)
@@ -213,21 +217,24 @@ void Application::BuddyAllocate() noexcept
 		m_buddyAllocations.clear();
 		m_buddyAllocations.resize(m_buddyAllocationCount);
 	}
-
+	if (m_buddyDealloc) { m_buddyAllocator.reset(); }
 
 	std::string str = __FUNCTION__ " (" + std::to_string(m_buddyAllocationCount) + ")";
-	PROFILE_SCOPE(str);
-	m_buddyAllocatorFull = false;
-	for (auto i = 0u; i < m_buddyAllocationCount; ++i)
 	{
-		m_buddyAllocations[i] = m_buddyAllocator.alloc(m_buddyAllocationSize);
-
-		if (!m_buddyAllocations[i])
+		PROFILE_SCOPE(str);
+		m_buddyAllocatorFull = false;
+		for (auto i = 0u; i < m_buddyAllocationCount; ++i)
 		{
-			m_buddyAllocatorFull = true;
-			break;
+			m_buddyAllocations[i] = m_buddyAllocator.alloc(m_buddyAllocationSize);
+
+			if (!m_buddyAllocations[i])
+			{
+				m_buddyAllocatorFull = true;
+				break;
+			}
 		}
 	}
+	m_buddyUnusedMemory = m_buddyAllocator.getUnusedMemory();
 }
 
 void Application::BuddyDeallocate() noexcept
@@ -235,6 +242,16 @@ void Application::BuddyDeallocate() noexcept
 	std::string str = __FUNCTION__ " (" + std::to_string(m_buddyAllocationCount) + ")";
 	PROFILE_SCOPE(str);
 	std::for_each(m_buddyAllocations.begin(), m_buddyAllocations.end(), [this](void* ptr) { m_buddyAllocator.free(ptr, m_buddyAllocationSize); });
+}
+
+void Application::RenderBuddyProgressBar() noexcept
+{
+	ImGui::Text("Memory: ");
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	float frac = (float)m_buddyUnusedMemory / (float)MAX_BLOCK;
+	ImGui::ProgressBar(frac, ImVec2(0, 0));
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::Text("%d / %d", m_buddyUnusedMemory, MAX_BLOCK);
 }
 
 void Application::StackAllocateObjects() noexcept

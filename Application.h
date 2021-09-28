@@ -39,6 +39,8 @@ private:
 	template<typename T>
 	void RenderPoolAllocatorProgressBar(PoolAllocator<T>& poolAllocator) noexcept;
 
+	void RenderBuddyProgressBar() noexcept;
+
 	void StackAllocateObjects() noexcept;
 	void RenderStackAllocatorProgressBar() noexcept;
 private:
@@ -59,6 +61,8 @@ private:
 	bool m_buddyEnabled;
 	bool m_buddyDealloc;
 	bool m_buddyAllocatorFull;
+
+	size_t m_buddyUnusedMemory = 0;
 };
 
 template<typename T>
