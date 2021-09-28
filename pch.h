@@ -23,6 +23,7 @@
 #include <array>
 #include <thread>
 #include <cstdlib>
+#include <ctime>
 
 #if defined(DEBUG) | defined (_DEBUG)
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )

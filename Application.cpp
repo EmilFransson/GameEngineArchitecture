@@ -4,8 +4,8 @@
 #include "RenderCommand.h"
 #include "StackAllocator.h"
 
-#define MEGA 1000000
-#define GIGA 1000000000
+#define MEGA 1000000ll
+#define GIGA 1000000000ll
 using namespace std::this_thread;     // sleep_for, sleep_until
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using std::chrono::system_clock;
@@ -36,7 +36,7 @@ Application::Application() noexcept
 void Application::Run() noexcept
 {
 	//Send in the size in bytes
-	StackAllocator::CreateAllocator(GIGA / 5);
+	StackAllocator::CreateAllocator(GIGA * 5ll);
 	while (m_Running)
 	{
 		static const FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -150,7 +150,7 @@ void Application::StackAllocatorTestOne()
 	if (ImGui::Button("Test Case 1 - Many small objects"))
 	{
 		const size_t n = 400000;
-		const size_t testCases = 1000;
+		const size_t testCases = 10;
 
 		float allocationTimeSum = 0.0f;
 		//Stack Allocator
@@ -169,7 +169,7 @@ void Application::StackAllocatorTestOne()
 		
 		ProfileMetrics result = {};
 		result.Name = "Cube Stack allocation: Test 1 - 400 000 cubes";
-		result.Duration = allocationTimeSum / 1000.0f;
+		result.Duration = allocationTimeSum / 10.0f;
 		m_TestResults.push_back(result);
 
 		m_RepeatedTests.clear();
@@ -195,7 +195,7 @@ void Application::StackAllocatorTestOne()
 		}
 
 		result.Name = "Cube New allocation: Test 1 - 400 000 cubes";
-		result.Duration = allocationTimeSum / 1000.0f;
+		result.Duration = allocationTimeSum / 10.0f;
 		m_TestResults.push_back(result);
 
 		m_RepeatedTests.clear();
@@ -206,15 +206,15 @@ void Application::StackAllocatorTestTwo()
 {
 	if (ImGui::Button("Test Case 2 - Few large objects"))
 	{
-		const size_t n = 4000;
-		const size_t testCases = 1000;
+		const size_t n = 40000;
+		const size_t testCases = 10;
 
 		float allocationTimeSum = 0.0f;
 		//Stack Allocator
 		for (size_t i = 0; i < testCases; i++)
 		{
 			{
-				PROFILE_TEST("Sphere Stack allocation & deallocation: Test 2 - 4000 Spheres");
+				PROFILE_TEST("Sphere Stack allocation & deallocation: Test 2 - 40 000 Spheres");
 				for (size_t j = 0; j < n; j++)
 				{
 					StackAllocator::GetInstance()->New<Sphere>();
@@ -225,8 +225,8 @@ void Application::StackAllocatorTestTwo()
 		}
 
 		ProfileMetrics result = {};
-		result.Name = "Sphere Stack allocation: Test 2 - 4000 Spheres";
-		result.Duration = allocationTimeSum / 1000.0f;
+		result.Name = "Sphere Stack allocation: Test 2 - 40 000 Spheres";
+		result.Duration = allocationTimeSum / 10.0f;
 		m_TestResults.push_back(result);
 
 		m_RepeatedTests.clear();
@@ -237,7 +237,7 @@ void Application::StackAllocatorTestTwo()
 		for (size_t i = 0; i < testCases; i++)
 		{
 			{
-				PROFILE_TEST("Sphere New allocation & deallocation: Test 2 - 4000 Spheres");
+				PROFILE_TEST("Sphere New allocation & deallocation: Test 2 - 40 000 Spheres");
 				std::vector<Sphere*> sphereArray;
 				for (size_t j = 0; j < n; j++)
 				{
@@ -251,8 +251,8 @@ void Application::StackAllocatorTestTwo()
 			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
 
-		result.Name = "Sphere New allocation: Test 2 - 4000 Spheres";
-		result.Duration = allocationTimeSum / 1000.0f;
+		result.Name = "Sphere New allocation: Test 2 - 40 000 Spheres";
+		result.Duration = allocationTimeSum / 10.0f;
 		m_TestResults.push_back(result);
 
 		m_RepeatedTests.clear();
@@ -263,11 +263,12 @@ void Application::StackAllocatorTestThree()
 {
 	if (ImGui::Button("Test Case 3 - Random objects in a random order"))
 	{
-		const size_t n = 50000;
-		const size_t testCases = 1000;
+		const size_t n = 500000;
+		const size_t testCases = 100; //More testcases for random
 
 		//Randomize objects. Ints are between 1-3 inclusive.
 		std::vector<int> randomInts;
+		std::srand(std::time(0));
 		for (size_t i = 0; i < n; i++)
 			randomInts.push_back(std::rand() % 3 + 1);
 
@@ -276,7 +277,7 @@ void Application::StackAllocatorTestThree()
 		for (size_t i = 0; i < testCases; i++)
 		{
 			{
-				PROFILE_TEST("Random Stack allocation & deallocation: Test 3 - 50 000 objects");
+				PROFILE_TEST("Random Stack allocation & deallocation: Test 3 - 500 000 objects");
 				for (size_t j = 0; j < n; j++)
 				{
 					switch (randomInts[j])
@@ -300,8 +301,8 @@ void Application::StackAllocatorTestThree()
 		}
 
 		ProfileMetrics result = {};
-		result.Name = "Random Stack allocation: Test 3 - 50 000 objects";
-		result.Duration = allocationTimeSum / 1000.0f;
+		result.Name = "Random Stack allocation: Test 3 - 500 000 objects";
+		result.Duration = allocationTimeSum / 10.0f;
 		m_TestResults.push_back(result);
 
 		m_RepeatedTests.clear();
@@ -312,7 +313,7 @@ void Application::StackAllocatorTestThree()
 		for (size_t i = 0; i < testCases; i++)
 		{
 			{
-				PROFILE_TEST("Random New allocation & deallocation: Test 3 - 50 000 objects");
+				PROFILE_TEST("Random New allocation & deallocation: Test 3 - 500 000 objects");
 				std::vector<Shape*> shapeArray;
 				for (size_t j = 0; j < n; j++)
 				{
@@ -338,8 +339,8 @@ void Application::StackAllocatorTestThree()
 			}
 			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
 		}
-		result.Name = "Random New allocation: Test 3 - 50 000 objects";
-		result.Duration = allocationTimeSum / 1000.0f;
+		result.Name = "Random New allocation: Test 3 - 500 000 objects";
+		result.Duration = allocationTimeSum / 10.0f;
 		m_TestResults.push_back(result);
 
 		m_RepeatedTests.clear();
