@@ -5,11 +5,13 @@
 #include "PoolAllocator.h"
 #include "BuddyAllocator.hpp"
 #include "Cube.h"
+#include "ObjectClasses.h"
 
 #define TOKENPASTE(x, y) x ## y
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
 #define PROFILE_FUNC Profiler TOKENPASTE2(profiler, __LINE__) (__FUNCTION__, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
 #define PROFILE_SCOPE(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName, [&](ProfileMetrics profileMetrics) {m_ProfileMetrics.push_back(std::move(profileMetrics));})
+#define PROFILE_TEST(scopeName) Profiler TOKENPASTE2(profiler, __LINE__) (scopeName, [&](ProfileMetrics profileMetrics) {m_RepeatedTests.push_back(std::move(profileMetrics)); })
 
 class Application
 {
@@ -19,7 +21,6 @@ public:
 	void Run() noexcept;
 private:
 	void DisplayProfilingResults() noexcept;
-	void AllocateCubes(uint32_t nrOfCubes) noexcept;
 	template<typename T>
 	void PoolAllocateObjects(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects, const uint64_t nrOfObjectsToAlloc) noexcept;
 	template<typename T>
@@ -42,9 +43,17 @@ private:
 	void RenderBuddyProgressBar() noexcept;
 
 	void StackAllocateObjects() noexcept;
+	void StackAllocatorTestOne();
+	void StackAllocatorTestTwo();
+	void StackAllocatorTestThree();
 	void RenderStackAllocatorProgressBar() noexcept;
+	void PerformPoolAllocatorTest1() noexcept;
+	void PerformPoolAllocatorTest2() noexcept;
+	void PerformPoolAllocatorTest3() noexcept;
 private:
 	std::vector<ProfileMetrics> m_ProfileMetrics;
+	std::vector<ProfileMetrics> m_RepeatedTests;
+	std::vector<ProfileMetrics> m_TestResults;
 	bool m_Running;
 	std::unique_ptr<UI> m_pImGui;
 	BuddyAllocator m_buddyAllocator;
@@ -207,6 +216,19 @@ void Application::RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocat
 				poolAllocator.SetNrOfEntitiesDeallocatedEveryFrame(nrOfObjectsToAllocAndDealloc);
 			}
 		}
+		if (ImGui::Button("Test 1 - 400 000 cubes"))
+		{
+			PerformPoolAllocatorTest1();
+		}
+		if (ImGui::Button("Test 2 - Placeholder"))
+		{
+			PerformPoolAllocatorTest2();
+		}
+		if (ImGui::Button("Test 3 - Placeholder"))
+		{
+			PerformPoolAllocatorTest3();
+		}
+
 		RenderPoolAllocatorProgressBar<T>(poolAllocator);
 	}
 	ImGui::End();

@@ -13,7 +13,7 @@ class StackAllocator
     //Protected so that no one else can create StackAllocators.
 protected:
     //Constructor is called only by CreateAllocator.
-    StackAllocator(size_t);
+    StackAllocator(unsigned long long);
     //Called when we delete the allocator in the FreeMemory-function.
     ~StackAllocator();
 
@@ -23,7 +23,7 @@ public:
     void operator=(const StackAllocator&) = delete;
 
     //Used to create the allocator if it does not exist.
-    static void CreateAllocator(size_t);
+    static void CreateAllocator(unsigned long long);
     static void FreeAllMemory();
     //Returns the instance of the singleton.
     static StackAllocator* GetInstance();
@@ -60,7 +60,7 @@ ObjectHeader* StackAllocator::m_pTop{ nullptr };
 
 //---------------------------------------------------------------------
 
-void StackAllocator::CreateAllocator(size_t stackSize)
+void StackAllocator::CreateAllocator(unsigned long long stackSize)
 {
     //Only create it if it does not exist.
     if (!pInstance)
@@ -105,7 +105,7 @@ size_t StackAllocator::GetStackCurrentSize()
     return m_pMemoryStack->m_currentSize;
 }
 
-StackAllocator::StackAllocator(size_t stackSize)
+StackAllocator::StackAllocator(unsigned long long stackSize)
 {
     //Allocate the "header" of the stack.
     m_pMemoryStack = DBG_NEW Stack(stackSize);
