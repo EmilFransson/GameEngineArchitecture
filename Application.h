@@ -3,6 +3,7 @@
 #include "UI.h"
 #include "Profiler.h"
 #include "PoolAllocator.h"
+#include "BuddyAllocator.hpp"
 #include "ObjectClasses.h"
 
 #define TOKENPASTE(x, y) x ## y
@@ -27,15 +28,23 @@ private:
 	void NewAllocateObjects(std::vector<T*>& objects, const uint64_t nrOfObjectsToAlloc) noexcept;
 	template<typename T>
 	void NewDeallocateObjects(std::vector<T*>& objects, const uint64_t nrOfObjectsToDealloc) noexcept;
+	void BuddyAllocate() noexcept;
+	void BuddyDeallocate() noexcept;
 	template<typename T>
 	void ResetPoolAllocator(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept;
 	template<typename T>
 	void RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocator, std::vector<T*>& objects) noexcept;
 	void RenderNewAllocatorSettingsPanel() noexcept;
+	void RenderBuddyAllocatorSettingsPanel() noexcept;
 	template<typename T>
 	void RenderPoolAllocatorProgressBar(PoolAllocator<T>& poolAllocator) noexcept;
 
+	void RenderBuddyProgressBar() noexcept;
+
 	void StackAllocateObjects() noexcept;
+	void StackAllocatorTestOne();
+	void StackAllocatorTestTwo();
+	void StackAllocatorTestThree();
 	void RenderStackAllocatorProgressBar() noexcept;
 	void PerformPoolAllocatorTest1() noexcept;
 	void PerformPoolAllocatorTest2() noexcept;
@@ -46,10 +55,22 @@ private:
 	std::vector<ProfileMetrics> m_TestResults;
 	bool m_Running;
 	std::unique_ptr<UI> m_pImGui;
+	BuddyAllocator m_buddyAllocator;
 	PoolAllocator<Cube> m_CubeAllocator = PoolAllocator<Cube>("Cube allocator");
 	std::vector<Cube*> m_pCubesPool;
 	std::vector<Cube*> m_pCubesNew;
 	static int s_NrOfCubesToPoolAllocate;
+	static bool s_DeallocateEveryFrame;
+
+	// Buddy Allocator Settings
+	std::vector<void*> m_buddyAllocations;
+	int m_buddyAllocationSize;
+	int m_buddyAllocationCount;
+	bool m_buddyEnabled;
+	bool m_buddyDealloc;
+	bool m_buddyAllocatorFull;
+
+	size_t m_buddyUnusedMemory = 0;
 };
 
 template<typename T>
