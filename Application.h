@@ -4,7 +4,6 @@
 #include "Profiler.h"
 #include "PoolAllocator.h"
 #include "BuddyAllocator.hpp"
-#include "Cube.h"
 #include "ObjectClasses.h"
 
 #define TOKENPASTE(x, y) x ## y

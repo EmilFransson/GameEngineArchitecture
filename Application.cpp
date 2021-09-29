@@ -209,7 +209,7 @@ void Application::StackAllocatorTestOne()
 	}
 
 	// BuddyAllocator
-	str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - Buddy Allocator";
+	/*str = "Application::AllocateCubes (" + std::to_string(nrOfCubes) + ") - Buddy Allocator";
 	Cube** cubes = new Cube * [10000];
 	{
 		PROFILE_SCOPE(str);
@@ -217,7 +217,7 @@ void Application::StackAllocatorTestOne()
 		cubes[0] = (Cube*) m_buddyAllocator.alloc(sizeof(Cube) * nrOfCubes);
 		m_buddyAllocator.free(cubes[0], sizeof(Cube) * nrOfCubes);
 	}
-	delete[] cubes;
+	delete[] cubes;*/
 }
 
 void Application::StackAllocatorTestTwo()
