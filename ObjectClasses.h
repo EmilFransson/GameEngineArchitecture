@@ -30,5 +30,5 @@ public:
 	Pyramid() noexcept = default;
 	virtual ~Pyramid() noexcept override = default;
 private:
-	std::byte m_Bytes[1487];
+	std::byte m_Bytes[1457];
 };

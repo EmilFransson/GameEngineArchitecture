@@ -337,82 +337,252 @@ void Application::RenderStackAllocatorProgressBar() noexcept
 
 void Application::PerformPoolAllocatorTest1() noexcept
 {
-	PoolAllocator<Cube> cubeAllocator("Cube Allocator", 400000u);
-	std::vector<Cube*> cubes;
-	cubes.reserve(400000);
-	for (uint64_t i = 0u; i < 400000; i++)
+	m_TestResults.clear();
+	uint64_t factor = 1;
+	for (uint64_t i{ 0 }; i < 4; i++)
 	{
-		Cube* cube = nullptr;
-		cubes.push_back(cube);
+		PoolAllocator<Cube> cubeAllocator("Cube Allocator", 1000 * factor);
+		std::vector<Cube*> cubes;
+		cubes.reserve(1000 * factor);
+		for (uint64_t j = 0u; j < (1000 * factor); j++)
+		{
+			Cube* cube = nullptr;
+			cubes.push_back(cube);
+		}
+
+		float allocationTimeSum = 0.0f;
+		float deallocationTimeSum = 0.0f;
+		std::string str1 = "Cube Pool allocation: Test 1 - " + std::to_string(1000 * factor) + " cubes";
+		std::string str2 = "Cube Pool deallocation: Test 1 - " + std::to_string(1000 * factor) + " cubes";
+		for (uint64_t k{ 0u }; k < 10; k++)
+		{
+			{
+				PROFILE_TEST(str1.c_str());
+				for (uint64_t l{ 0u }; l < (1000 * factor); l++)
+				{
+					cubes[l] = cubeAllocator.New();
+				}
+			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+			{
+				PROFILE_TEST(str2.c_str());
+				for (uint64_t m{ 0u }; m < (1000 * factor); m++)
+				{
+					cubeAllocator.Delete(cubes[m]);
+				}
+			}
+			deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		}
+		ProfileMetrics result = {};
+		result.Name = str1.c_str();
+		result.Duration = allocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+		result.Name = str2.c_str();
+		result.Duration = deallocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		result = {};
+		allocationTimeSum = 0.0f;
+		deallocationTimeSum = 0.0f;
+
+		str1 = "Cube New allocation: Test 1 - " + std::to_string(1000 * factor) + " cubes";
+		str2 = "Cube New deallocation: Test 1 - " + std::to_string(1000 * factor) + " cubes";
+		for (uint64_t n{ 0u }; n < 10u; n++)
+		{
+			{
+				PROFILE_TEST(str1.c_str());
+				for (uint64_t o{ 0u }; o < (1000 * factor); o++)
+				{
+					cubes[o] = DBG_NEW Cube;
+				}
+			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+			{
+				PROFILE_TEST(str2.c_str());
+				for (uint64_t p{ 0u }; p < (1000 * factor); p++)
+				{
+					delete cubes[p];
+				}
+			}
+			deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		}
+		result.Name = str1.c_str();
+		result.Duration = allocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+		result.Name = str2.c_str();
+		result.Duration = deallocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		factor *= 10;
 	}
-	
-	float allocationTimeSum = 0.0f;
-	float deallocationTimeSum = 0.0f;
-	for (uint64_t i{ 0u }; i < 1000; i++)
-	{
-		{
-			PROFILE_TEST("Cube Pool allocation: Test 1 - 400 000 cubes");
-			for (uint64_t j{ 0u }; j < 400000; j++)
-			{
-				cubes[j] = cubeAllocator.New();
-			}
-		}
-		allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
-		{
-			PROFILE_TEST("Cube Pool deallocation: Test 1 - 400 000 cubes");
-			for (uint64_t j{ 0u }; j < 400000; j++)
-			{
-				cubeAllocator.Delete(cubes[j]);
-			}
-		}
-		deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
-	}
-	ProfileMetrics result = {};
-	result.Name = "Cube Pool allocation: Test 1 - 400 000 cubes";
-	result.Duration = allocationTimeSum / 1000.0f;
-	m_TestResults.push_back(result);
-	result.Name = "Cube Pool deallocation: Test 1 - 400 000 cubes";
-	result.Duration = deallocationTimeSum / 1000.0f;
-	m_TestResults.push_back(result);
-	
-	m_RepeatedTests.clear();
-	result = {}; 
-	allocationTimeSum = 0.0f;
-	deallocationTimeSum = 0.0f;
-	
-	for (uint64_t i{ 0u }; i < 1000u; i++)
-	{
-		{
-			PROFILE_TEST("New allocation: Test 1 - 400 000 cubes");
-			for (uint64_t j{ 0u }; j < 400000; j++)
-			{
-				cubes[j] = DBG_NEW Cube;
-			}
-		}
-		allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
-		{
-			PROFILE_TEST("New deallocation: Test 1 - 400 000 cubes");
-			for (uint64_t k{ 0u }; k < 400000; k++)
-			{
-				delete cubes[k];
-			}
-		}
-		deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
-	}
-	result.Name = "Cube New allocation: Test 1 - 400 000 cubes";
-	result.Duration = allocationTimeSum / 1000.0f;
-	m_TestResults.push_back(result);
-	result.Name = "Cube Delete deallocation: Test 1 - 400 000 cubes";
-	result.Duration = deallocationTimeSum / 1000.0f;
-	m_TestResults.push_back(result);
-	
-	m_RepeatedTests.clear();
 }
 
 void Application::PerformPoolAllocatorTest2() noexcept
 {
+	m_TestResults.clear();
+	uint64_t factor = 1;
+	for (uint64_t i{ 0 }; i < 4; i++)
+	{
+		PoolAllocator<Pyramid> pyramidAllocator("Pyramid Allocator", 1000 * factor);
+		std::vector<Pyramid*> pyramids;
+		pyramids.reserve(1000 * factor);
+		for (uint64_t j = 0u; j < (1000 * factor); j++)
+		{
+			Pyramid* pPyramid = nullptr;
+			pyramids.push_back(pPyramid);
+		}
+
+		float allocationTimeSum = 0.0f;
+		float deallocationTimeSum = 0.0f;
+		std::string str1 = "Pyramid Pool allocation: Test 2 - " + std::to_string(1000 * factor) + " pyramids";
+		std::string str2 = "Pyramid Pool deallocation: Test 2 - " + std::to_string(1000 * factor) + " pyramids";
+		for (uint64_t k{ 0u }; k < 10u; k++)
+		{
+			{
+				PROFILE_TEST(str1.c_str());
+				for (uint64_t l{ 0u }; l < (1000 * factor); l++)
+				{
+					pyramids[l] = pyramidAllocator.New();
+				}
+			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+			{
+				PROFILE_TEST(str2.c_str());
+				for (uint64_t m{ 0u }; m < (1000 * factor); m++)
+				{
+					pyramidAllocator.Delete(pyramids[m]);
+				}
+			}
+			deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		}
+		ProfileMetrics result = {};
+		result.Name = str1.c_str();
+		result.Duration = allocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+		result.Name = str2.c_str();
+		result.Duration = deallocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		result = {};
+		allocationTimeSum = 0.0f;
+		deallocationTimeSum = 0.0f;
+
+		str1 = "Pyramid New allocation: Test 2 - " + std::to_string(1000 * factor) + " pyramids";
+		str2 = "Pyramid New deallocation: Test 2 - " + std::to_string(1000 * factor) + " pyramids";
+		for (uint64_t n{ 0u }; n < 10u; n++)
+		{
+			{
+				PROFILE_TEST(str1.c_str());
+				for (uint64_t o{ 0u }; o < (1000 * factor); o++)
+				{
+					pyramids[o] = DBG_NEW Pyramid;
+				}
+			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+			{
+				PROFILE_TEST(str2.c_str());
+				for (uint64_t p{ 0u }; p < (1000 * factor); p++)
+				{
+					delete pyramids[p];
+				}
+			}
+			deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		}
+		result.Name = str1.c_str();
+		result.Duration = allocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+		result.Name = str2.c_str();
+		result.Duration = deallocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		factor *= 10;
+	}
 }
 
 void Application::PerformPoolAllocatorTest3() noexcept
 {
+	m_TestResults.clear();
+	uint64_t factor = 1;
+	for (uint64_t i{ 0 }; i < 4; i++)
+	{
+		PoolAllocator<Sphere> sphereAllocator("Sphere Allocator", 1000 * factor);
+		std::vector<Sphere*> spheres;
+		spheres.reserve(1000 * factor);
+		for (uint64_t j = 0u; j < (1000 * factor); j++)
+		{
+			Sphere* sphere = nullptr;
+			spheres.push_back(sphere);
+		}
+
+		float allocationTimeSum = 0.0f;
+		float deallocationTimeSum = 0.0f;
+		std::string str1 = "Sphere Pool allocation: Test 3 - " + std::to_string(1000 * factor) + " spheres";
+		std::string str2 = "Sphere Pool deallocation: Test 3 - " + std::to_string(1000 * factor) + " spheres";
+		for (uint64_t k{ 0u }; k < 10u; k++)
+		{
+			{
+				PROFILE_TEST(str1.c_str());
+				for (uint64_t l{ 0u }; l < (1000 * factor); l++)
+				{
+					spheres[l] = sphereAllocator.New();
+				}
+			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+			{
+				PROFILE_TEST(str2.c_str());
+				for (uint64_t m{ 0u }; m < (1000 * factor); m++)
+				{
+					sphereAllocator.Delete(spheres[m]);
+				}
+			}
+			deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		}
+		ProfileMetrics result = {};
+		result.Name = str1.c_str();
+		result.Duration = allocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+		result.Name = str2.c_str();
+		result.Duration = deallocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		result = {};
+		allocationTimeSum = 0.0f;
+		deallocationTimeSum = 0.0f;
+
+		str1 = "Cube New allocation: Test 3 - " + std::to_string(1000 * factor) + " spheres";
+		str2 = "Cube New deallocation: Test 3 - " + std::to_string(1000 * factor) + " spheres";
+		for (uint64_t n{ 0u }; n < 10u; n++)
+		{
+			{
+				PROFILE_TEST(str1.c_str());
+				for (uint64_t o{ 0u }; o < (1000 * factor); o++)
+				{
+					spheres[o] = DBG_NEW Sphere;
+				}
+			}
+			allocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+			{
+				PROFILE_TEST(str2.c_str());
+				for (uint64_t p{ 0u }; p < (1000 * factor); p++)
+				{
+					delete spheres[p];
+				}
+			}
+			deallocationTimeSum += m_RepeatedTests[m_RepeatedTests.size() - 1].Duration;
+		}
+		result.Name = str1.c_str();
+		result.Duration = allocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+		result.Name = str2.c_str();
+		result.Duration = deallocationTimeSum / 10.0f;
+		m_TestResults.push_back(result);
+
+		m_RepeatedTests.clear();
+		factor *= 10;
+	}
 }

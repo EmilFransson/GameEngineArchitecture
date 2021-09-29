@@ -194,15 +194,15 @@ void Application::RenderPoolAllocatorSettingsPanel(PoolAllocator<T>& poolAllocat
 				poolAllocator.SetNrOfEntitiesDeallocatedEveryFrame(nrOfObjectsToAllocAndDealloc);
 			}
 		}
-		if (ImGui::Button("Test 1 - 400 000 cubes"))
+		if (ImGui::Button("Test 1 - Cubes (100 bytes object)"))
 		{
 			PerformPoolAllocatorTest1();
 		}
-		if (ImGui::Button("Test 2 - Placeholder"))
+		if (ImGui::Button("Test 2 - Pyramids (1457 bytes object)"))
 		{
 			PerformPoolAllocatorTest2();
 		}
-		if (ImGui::Button("Test 3 - Placeholder"))
+		if (ImGui::Button("Test 3 - Spheres (10 000 bytes object)"))
 		{
 			PerformPoolAllocatorTest3();
 		}
